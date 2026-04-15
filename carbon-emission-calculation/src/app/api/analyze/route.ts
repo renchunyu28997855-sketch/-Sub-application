@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeCarbonEmissions, mockAnalyze } from '@/lib/llm';
+
+// 动态导入 llm 模块，避免构建时加载
+async function getLlmModule() {
+  const module = await import('@/lib/llm');
+  return module;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,9 +17,11 @@ export async function POST(req: NextRequest) {
 
     let result;
     if (mock || !process.env.MINIMAX_API_KEY) {
-      result = mockAnalyze({ energySources, rawMaterials, logistics, productionData, reportingStandards });
+      const llm = await getLlmModule();
+      result = llm.mockAnalyze({ energySources, rawMaterials, logistics, productionData, reportingStandards });
     } else {
-      result = await analyzeCarbonEmissions({ energySources, rawMaterials, logistics, productionData, reportingStandards });
+      const llm = await getLlmModule();
+      result = await llm.analyzeCarbonEmissions({ energySources, rawMaterials, logistics, productionData, reportingStandards });
     }
     return NextResponse.json(result);
   } catch (error) {

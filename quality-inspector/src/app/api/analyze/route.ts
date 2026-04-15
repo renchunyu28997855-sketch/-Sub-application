@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeQualityInspection, mockAnalyzeQuality } from '@/lib/llm';
+
+async function getLlmModule() {
+  const module = await import('@/lib/llm');
+  return module;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,11 +17,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const llm = await getLlmModule();
     let result;
     if (mock || !process.env.MINIMAX_API_KEY) {
-      result = mockAnalyzeQuality({ inspectionType, productId, productType, parameters });
+      result = llm.mockAnalyzeQuality({ inspectionType, productId, productType, parameters });
     } else {
-      result = await analyzeQualityInspection({ inspectionType, productId, productType, parameters });
+      result = await llm.analyzeQualityInspection({ inspectionType, productId, productType, parameters });
     }
     return NextResponse.json(result);
   } catch (error) {

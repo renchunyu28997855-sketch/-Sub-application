@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeLogistics, mockAnalyze } from '@/lib/llm';
+
+async function getLlmModule() {
+  const module = await import('@/lib/llm');
+  return module;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,11 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '物流描述不能为空' }, { status: 400 });
     }
 
+    const llm = await getLlmModule();
     let result;
     if (mock || !process.env.MINIMAX_API_KEY) {
-      result = mockAnalyze({ jobDescription, context });
+      result = llm.mockAnalyze({ jobDescription, context });
     } else {
-      result = await analyzeLogistics({ jobDescription, context });
+      result = await llm.analyzeLogistics({ jobDescription, context });
     }
     return NextResponse.json(result);
   } catch (error) {
