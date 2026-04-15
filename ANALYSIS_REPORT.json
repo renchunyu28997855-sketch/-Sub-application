@@ -1,0 +1,419 @@
+{
+  "total": 50,
+  "categories": 19,
+  "categoryDetails": {
+    "optimization": {
+      "count": 9,
+      "skills": [
+        {
+          "name": "air-compressor-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "energy-saving-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "equipment-energy-efficiency",
+          "hasDoc": true
+        },
+        {
+          "name": "hvac-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "lighting-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "peak-shaving",
+          "hasDoc": true
+        },
+        {
+          "name": "picking-path-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "resource-allocation",
+          "hasDoc": true
+        },
+        {
+          "name": "warehouse-layout-optimization",
+          "hasDoc": true
+        }
+      ]
+    },
+    "other": {
+      "count": 9,
+      "skills": [
+        {
+          "name": "assembly-quality-check",
+          "hasDoc": true
+        },
+        {
+          "name": "contamination-detection",
+          "hasDoc": true
+        },
+        {
+          "name": "dimension-measurement",
+          "hasDoc": true
+        },
+        {
+          "name": "energy-cost-allocation",
+          "hasDoc": true
+        },
+        {
+          "name": "label-recognition",
+          "hasDoc": true
+        },
+        {
+          "name": "multi-plant-coordination",
+          "hasDoc": true
+        },
+        {
+          "name": "production-line-balancing",
+          "hasDoc": true
+        },
+        {
+          "name": "surface-roughness-detection",
+          "hasDoc": true
+        },
+        {
+          "name": "vibration-analysis",
+          "hasDoc": true
+        }
+      ]
+    },
+    "health-monitoring": {
+      "count": 2,
+      "skills": [
+        {
+          "name": "bearing-health-monitoring",
+          "hasDoc": true
+        },
+        {
+          "name": "motor-current-analysis",
+          "hasDoc": true
+        }
+      ]
+    },
+    "wear-detection": {
+      "count": 2,
+      "skills": [
+        {
+          "name": "belt-wear-detection",
+          "hasDoc": true
+        },
+        {
+          "name": "tool-wear-detection",
+          "hasDoc": true
+        }
+      ]
+    },
+    "planning": {
+      "count": 3,
+      "skills": [
+        {
+          "name": "bottleneck-identification",
+          "hasDoc": true
+        },
+        {
+          "name": "capacity-planning",
+          "hasDoc": true
+        },
+        {
+          "name": "procurement-optimization",
+          "hasDoc": true
+        }
+      ]
+    },
+    "carbon-emission": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "carbon-emission-calculation",
+          "hasDoc": true
+        }
+      ]
+    },
+    "coating-detection": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "coating-thickness-detection",
+          "hasDoc": true
+        }
+      ]
+    },
+    "color-detection": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "color-difference-detection",
+          "hasDoc": true
+        }
+      ]
+    },
+    "scheduling": {
+      "count": 6,
+      "skills": [
+        {
+          "name": "delivery-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "maintenance-schedule-optimization",
+          "hasDoc": true
+        },
+        {
+          "name": "production-scheduling",
+          "hasDoc": true
+        },
+        {
+          "name": "rush-order-handling",
+          "hasDoc": true
+        },
+        {
+          "name": "shift-scheduling",
+          "hasDoc": true
+        },
+        {
+          "name": "thermal-monitoring",
+          "hasDoc": true
+        }
+      ]
+    },
+    "prediction": {
+      "count": 5,
+      "skills": [
+        {
+          "name": "energy-consumption-monitoring",
+          "hasDoc": true
+        },
+        {
+          "name": "equipment-failure-prediction",
+          "hasDoc": true
+        },
+        {
+          "name": "inventory-prediction",
+          "hasDoc": true
+        },
+        {
+          "name": "remaining-life-prediction",
+          "hasDoc": true
+        },
+        {
+          "name": "spoilage-prediction",
+          "hasDoc": true
+        }
+      ]
+    },
+    "incoming-inspection": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "incoming-inspection",
+          "hasDoc": true
+        }
+      ]
+    },
+    "maintenance": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "lubrication-advisory",
+          "hasDoc": true
+        }
+      ]
+    },
+    "material-management": {
+      "count": 2,
+      "skills": [
+        {
+          "name": "material-replenishment",
+          "hasDoc": true
+        },
+        {
+          "name": "material-substitution",
+          "hasDoc": true
+        }
+      ]
+    },
+    "quality-detection": {
+      "count": 2,
+      "skills": [
+        {
+          "name": "material-traceability",
+          "hasDoc": true
+        },
+        {
+          "name": "visual-defect-detection",
+          "hasDoc": true
+        }
+      ]
+    },
+    "order-priority": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "order-priority-ranking",
+          "hasDoc": true
+        }
+      ]
+    },
+    "packaging-quality": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "packaging-quality-check",
+          "hasDoc": true
+        }
+      ]
+    },
+    "peak-shaving": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "renewable-energy-integration",
+          "hasDoc": true
+        }
+      ]
+    },
+    "supplier-management": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "supplier-performance-evaluation",
+          "hasDoc": true
+        }
+      ]
+    },
+    "weld-inspection": {
+      "count": 1,
+      "skills": [
+        {
+          "name": "weld-quality-inspection",
+          "hasDoc": true
+        }
+      ]
+    }
+  },
+  "duplicates": [
+    {
+      "category": "optimization",
+      "count": 9,
+      "skills": [
+        "air-compressor-optimization",
+        "energy-saving-optimization",
+        "equipment-energy-efficiency",
+        "hvac-optimization",
+        "lighting-optimization",
+        "peak-shaving",
+        "picking-path-optimization",
+        "resource-allocation",
+        "warehouse-layout-optimization"
+      ]
+    },
+    {
+      "category": "other",
+      "count": 9,
+      "skills": [
+        "assembly-quality-check",
+        "contamination-detection",
+        "dimension-measurement",
+        "energy-cost-allocation",
+        "label-recognition",
+        "multi-plant-coordination",
+        "production-line-balancing",
+        "surface-roughness-detection",
+        "vibration-analysis"
+      ]
+    },
+    {
+      "category": "health-monitoring",
+      "count": 2,
+      "skills": [
+        "bearing-health-monitoring",
+        "motor-current-analysis"
+      ]
+    },
+    {
+      "category": "wear-detection",
+      "count": 2,
+      "skills": [
+        "belt-wear-detection",
+        "tool-wear-detection"
+      ]
+    },
+    {
+      "category": "planning",
+      "count": 3,
+      "skills": [
+        "bottleneck-identification",
+        "capacity-planning",
+        "procurement-optimization"
+      ]
+    },
+    {
+      "category": "scheduling",
+      "count": 6,
+      "skills": [
+        "delivery-optimization",
+        "maintenance-schedule-optimization",
+        "production-scheduling",
+        "rush-order-handling",
+        "shift-scheduling",
+        "thermal-monitoring"
+      ]
+    },
+    {
+      "category": "prediction",
+      "count": 5,
+      "skills": [
+        "energy-consumption-monitoring",
+        "equipment-failure-prediction",
+        "inventory-prediction",
+        "remaining-life-prediction",
+        "spoilage-prediction"
+      ]
+    },
+    {
+      "category": "material-management",
+      "count": 2,
+      "skills": [
+        "material-replenishment",
+        "material-substitution"
+      ]
+    },
+    {
+      "category": "quality-detection",
+      "count": 2,
+      "skills": [
+        "material-traceability",
+        "visual-defect-detection"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "consolidate",
+      "category": "optimization",
+      "message": "optimization类别有9个技能，建议合并为更少的高级技能"
+    },
+    {
+      "type": "consolidate",
+      "category": "other",
+      "message": "other类别有9个技能，建议合并为更少的高级技能"
+    },
+    {
+      "type": "consolidate",
+      "category": "scheduling",
+      "message": "scheduling类别有6个技能，建议合并为更少的高级技能"
+    },
+    {
+      "type": "consolidate",
+      "category": "prediction",
+      "message": "prediction类别有5个技能，建议合并为更少的高级技能"
+    }
+  ]
+}
