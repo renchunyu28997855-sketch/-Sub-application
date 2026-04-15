@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模具工厂 AI 大脑</title>
+    <style>
+:root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: #1a2235;
+    --accent-cyan: #00f5d4;
+    --accent-blue: #00bbf9;
+    --accent-glow: rgba(0, 245, 212, 0.3);
+    --text-primary: #e8f4f8;
+    --text-secondary: #94a3b8;
+    --border-color: #2d3a4f;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --font-main: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-main); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow: hidden; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 64px; background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 24, 39, 0.95) 100%); border-bottom: 1px solid var(--border-color); position: relative; z-index: 100; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-icon { font-size: 28px; animation: rotate 10s linear infinite; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.logo-text { font-size: 20px; font-weight: 600; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header-controls { display: flex; align-items: center; gap: 24px; }
+.clock { font-size: 14px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.tab-switch { display: flex; background: var(--bg-card); border-radius: 8px; padding: 4px; gap: 4px; }
+.tab-btn { padding: 8px 20px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 500; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: var(--bg-primary); box-shadow: 0 0 20px var(--accent-glow); }
+.view { display: none; height: calc(100vh - 64px - 40px); }
+.view.active { display: block; }
+.dashboard-container { display: flex; height: 100%; padding: 16px; gap: 16px; }
+.canvas-wrapper { flex: 1; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; position: relative; }
+.canvas-wrapper canvas { width: 100%; height: 100%; display: block; }
+.data-panel { width: 320px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.panel-header { font-size: 14px; font-weight: 600; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 1px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+.panel-header.mt { margin-top: 8px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--bg-card); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
+.stat-card:hover { border-color: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-glow); }
+.stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.stat-trend { font-size: 11px; margin-top: 4px; }
+.stat-trend.up { color: var(--success); }
+.stat-trend.down { color: var(--danger); }
+.event-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.event-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-card); border-radius: 6px; font-size: 12px; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+.event-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.event-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; }
+.event-icon.alert { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.event-icon.success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.event-icon.info { background: rgba(0, 187, 249, 0.2); color: var(--accent-blue); }
+.status-bar { display: flex; align-items: center; gap: 32px; padding: 0 24px; height: 40px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary); }
+.status-item { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+.status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.report-container { display: flex; height: 100%; padding: 24px; gap: 24px; }
+.report-form { width: 420px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); padding: 24px; overflow-y: auto; }
+.report-form h2 { font-size: 18px; color: var(--accent-cyan); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+.form-group input[type="text"], .form-group input[type="number"] { width: 100%; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; transition: border-color 0.3s ease; }
+.form-group input[type="text"]:focus, .form-group input[type="number"]:focus { outline: none; border-color: var(--accent-cyan); }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+.checkbox-group, .radio-group { display: flex; flex-wrap: wrap; gap: 12px; }
+.checkbox-group label, .radio-group label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-primary); cursor: pointer; }
+.checkbox-group input, .radio-group input { accent-color: var(--accent-cyan); }
+.btn-primary { width: 100%; padding: 12px 24px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border: none; border-radius: 8px; color: var(--bg-primary); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; margin-top: 8px; }
+.btn-primary:hover { box-shadow: 0 0 20px var(--accent-glow); transform: translateY(-1px); }
+.btn-secondary { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 13px; cursor: pointer; transition: all 0.3s ease; }
+.btn-secondary:hover { border-color: var(--accent-cyan); }
+.report-preview { flex: 1; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+.preview-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border-color); }
+.preview-header h2 { font-size: 16px; color: var(--accent-cyan); }
+.preview-actions { display: flex; gap: 12px; }
+.report-content { flex: 1; padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.6; }
+.report-content .placeholder { color: var(--text-secondary); text-align: center; margin-top: 60px; }
+.report-content h1 { font-size: 1.75rem; color: var(--accent-cyan); margin-bottom: 1.5rem; text-align: center; }
+.report-content h2 { font-size: 1.25rem; color: var(--text-primary); margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+.report-content h3 { font-size: 1rem; color: var(--accent-cyan); margin: 1rem 0 0.5rem; }
+.report-content p, .report-content li { font-size: 0.9rem; line-height: 1.8; color: var(--text-secondary); }
+.report-content ul { padding-left: 1.5rem; }
+.report-content li { margin-bottom: 0.5rem; }
+.report-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.report-content th, .report-content td { padding: 0.75rem; border: 1px solid var(--border-color); text-align: left; }
+.report-content th { background: var(--bg-card); color: var(--accent-cyan); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+.evolution-container { display: flex; height: 100%; padding: 16px; gap: 16px; }
+.control-panel { width: 300px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.speed-control { display: flex; flex-direction: column; gap: 8px; }
+.speed-control label { font-size: 12px; color: var(--text-secondary); }
+.speed-control input[type="range"] { width: 100%; accent-color: var(--accent-cyan); }
+.speed-control span { font-size: 12px; color: var(--accent-cyan); text-align: center; }
+.control-buttons { display: flex; gap: 8px; }
+.control-buttons button { flex: 1; }
+.event-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.log-item { font-size: 11px; padding: 6px 8px; background: var(--bg-card); border-radius: 4px; border-left: 3px solid var(--accent-cyan); }
+.log-item.alert { border-left-color: var(--warning); }
+.log-item.success { border-left-color: var(--success); }
+.log-item.info { border-left: 3px solid #00bbf9; }
+.log-item.review { border-left: 3px solid #9b59b6; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">⚙</span>
+                <span class="logo-text">模具工厂 AI 大脑</span>
+            </div>
+            <div class="header-controls">
+                <span id="clock" class="clock"></span>
+                <div class="tab-switch">
+                    <button class="tab-btn active" data-tab="dashboard">工厂大脑</button>
+                    <button class="tab-btn" data-tab="report">AI 方案生成</button>
+                    <button class="tab-btn" data-tab="evolution">AI 演进</button>
+                </div>
+            </div>
+        </header>
+
+        <section id="dashboard-view" class="view active">
+            <div class="dashboard-container">
+                <div class="canvas-wrapper">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <aside class="data-panel">
+                    <div class="panel-header">实时数据</div>
+                    <div id="stats-grid" class="stats-grid"></div>
+                    <div class="panel-header mt">事件流</div>
+                    <div id="event-feed" class="event-feed"></div>
+                </aside>
+            </div>
+            <footer class="status-bar">
+                <div class="status-item">
+                    <span class="status-dot online"></span>
+                    <span>系统正常</span>
+                </div>
+                <div class="status-item">
+                    <span id="agent-count">12 Agent 在线</span>
+                </div>
+                <div class="status-item">
+                    <span id="fps-counter">60 FPS</span>
+                </div>
+            </footer>
+        </section>
+
+        <section id="report-view" class="view">
+            <div class="report-container">
+                <div class="report-form">
+                    <h2>工厂基本信息</h2>
+                    <form id="factory-form">
+                        <div class="form-group">
+                            <label>工厂名称</label>
+                            <input type="text" name="factoryName" placeholder="XX模具工厂">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>员工人数</label>
+                                <input type="number" name="employeeCount" required>
+                            </div>
+                            <div class="form-group">
+                                <label>厂房面积 (㎡)</label>
+                                <input type="text" name="factoryArea" placeholder="5000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>年产值 (万元)</label>
+                                <input type="number" name="annualOutput" required>
+                            </div>
+                            <div class="form-group">
+                                <label>净利润率 (%)</label>
+                                <input type="number" name="profitRate" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>主要产品类型</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" name="products" value="injection"> 注塑模具</label>
+                                <label><input type="checkbox" name="products" value="stamping"> 冲压模具</label>
+                                <label><input type="checkbox" name="products" value="diecasting"> 压铸模具</label>
+                                <label><input type="checkbox" name="products" value="other"> 其他</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>核心痛点（最多选2个）</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" name="painPoints" value="production"> 生产效率低/交期不准</label>
+                                <label><input type="checkbox" name="painPoints" value="quality"> 产品质检问题</label>
+                                <label><input type="checkbox" name="painPoints" value="equipment"> 设备突发故障</label>
+                                <label><input type="checkbox" name="painPoints" value="inventory"> 原材料/库存混乱</label>
+                                <label><input type="checkbox" name="painPoints" value="decision"> 报表/决策缺数据</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>预算范围</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="budget" value="low"> 低（<5万）</label>
+                                <label><input type="radio" name="budget" value="medium"> 中（5-30万）</label>
+                                <label><input type="radio" name="budget" value="high"> 高（>30万）</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>期望周期</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="timeline" value="fast"> 1个月内</label>
+                                <label><input type="radio" name="timeline" value="medium"> 3-6个月</label>
+                                <label><input type="radio" name="timeline" value="long"> 半年以上</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">生成 AI 方案</button>
+                        <button type="button" class="btn-secondary" onclick="importTemplateData()" style="margin-top:8px;">一键导入模板数据</button>
+                    </form>
+                </div>
+                <div class="report-preview">
+                    <div class="preview-header">
+                        <h2>方案预览</h2>
+                        <div class="preview-actions">
+                            <button id="btn-save" class="btn-secondary">保存</button>
+                            <button id="btn-export-pdf" class="btn-primary">导出 PDF</button>
+                        </div>
+                    </div>
+                    <div id="report-content" class="report-content">
+                        <p class="placeholder">填写左侧表单，点击"生成 AI 方案"开始</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="evolution-view" class="view">
+            <div class="evolution-container">
+                <div class="canvas-wrapper" id="evolutionCanvas">
+                    <canvas id="mainCanvas2"></canvas>
+                </div>
+                <aside class="control-panel">
+                    <div class="panel-header">全局控制</div>
+                    <div class="speed-control">
+                        <label>演进速度</label>
+                        <input type="range" id="speedSlider" min="1" max="3" value="2">
+                        <span id="speedLabel">中速</span>
+                    </div>
+                    <div class="control-buttons">
+                        <button id="btn-pause" class="btn-secondary">暂停</button>
+                        <button id="btn-reset" class="btn-secondary">重置</button>
+                    </div>
+                    <div class="panel-header mt">事件日志</div>
+                    <div id="evolution-log" class="event-log"></div>
+                </aside>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    // ============ DEPARTMENTS DATA ============
+    const DEPARTMENTS = [
+        { id: 'order', name: '订单管理', x: 0.12, y: 0.25, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'design', name: '设计部', x: 0.28, y: 0.25, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'production', name: '生产车间', x: 0.44, y: 0.25, status: 'idle', tasks: 0, color: '#00ff88' },
+        { id: 'quality', name: '质检部门', x: 0.60, y: 0.25, status: 'idle', tasks: 0, color: '#00ff88' },
+        { id: 'equipment', name: '设备维护', x: 0.76, y: 0.40, status: 'idle', tasks: 0, color: '#ff6b35' },
+        { id: 'energy', name: '能源管理', x: 0.76, y: 0.55, status: 'idle', tasks: 0, color: '#00ff88' },
+        { id: 'warehouse', name: '仓储管理', x: 0.60, y: 0.70, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'purchase', name: '采购部', x: 0.44, y: 0.70, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'finance', name: '财务部', x: 0.28, y: 0.70, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'afterSales', name: '售后跟踪', x: 0.12, y: 0.70, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'hr', name: '人力资源', x: 0.12, y: 0.55, status: 'idle', tasks: 0, color: '#00d4ff' },
+        { id: 'datahub', name: '数据中枢', x: 0.44, y: 0.45, status: 'busy', tasks: 12, color: '#ff6b35', isCentral: true }
+    ];
+
+    const CONNECTIONS = [
+        { from: 'order', to: 'design' }, { from: 'design', to: 'production' },
+        { from: 'production', to: 'quality' }, { from: 'production', to: 'equipment' },
+        { from: 'quality', to: 'warehouse' }, { from: 'quality', to: 'production' },
+        { from: 'equipment', to: 'production' }, { from: 'energy', to: 'production' },
+        { from: 'warehouse', to: 'purchase' }, { from: 'purchase', to: 'warehouse' },
+        { from: 'warehouse', to: 'finance' }, { from: 'finance', to: 'afterSales' },
+        { from: 'afterSales', to: 'order' }, { from: 'hr', to: 'production' },
+        // 数据中枢双向连接所有部门
+        { from: 'datahub', to: 'order' }, { from: 'order', to: 'datahub' },
+        { from: 'datahub', to: 'design' }, { from: 'design', to: 'datahub' },
+        { from: 'datahub', to: 'production' }, { from: 'production', to: 'datahub' },
+        { from: 'datahub', to: 'quality' }, { from: 'quality', to: 'datahub' },
+        { from: 'datahub', to: 'equipment' }, { from: 'equipment', to: 'datahub' },
+        { from: 'datahub', to: 'warehouse' }, { from: 'warehouse', to: 'datahub' },
+        { from: 'datahub', to: 'finance' }, { from: 'finance', to: 'datahub' },
+        { from: 'datahub', to: 'energy' }, { from: 'energy', to: 'datahub' },
+        { from: 'datahub', to: 'purchase' }, { from: 'purchase', to: 'datahub' },
+        { from: 'datahub', to: 'afterSales' }, { from: 'afterSales', to: 'datahub' },
+        { from: 'datahub', to: 'hr' }, { from: 'hr', to: 'datahub' }
+    ];
+
+    // ============ EVENT BUS ============
+    class EventBus {
+        constructor() { this.listeners = new Map(); }
+        on(event, callback) {
+            if (!this.listeners.has(event)) this.listeners.set(event, []);
+            this.listeners.get(event).push(callback);
+        }
+        off(event, callback) {
+            if (!this.listeners.has(event)) return;
+            const callbacks = this.listeners.get(event);
+            const index = callbacks.indexOf(callback);
+            if (index > -1) callbacks.splice(index, 1);
+        }
+        emit(event, data) {
+            if (!this.listeners.has(event)) return;
+            this.listeners.get(event).forEach(callback => { try { callback(data); } catch (e) { console.error(e); } });
+        }
+        createEvent(type, message, data = {}) {
+            return { type, message, data, time: new Date().toLocaleTimeString('zh-CN', { hour12: false }), timestamp: Date.now() };
+        }
+    }
+
+    // ============ AGENT ============
+    const AGENT_STATES = { IDLE: 'idle', BUSY: 'busy', WARNING: 'warning', ERROR: 'error' };
+
+    class Agent {
+        constructor(id, name, eventBus) {
+            this.id = id; this.name = name; this.eventBus = eventBus;
+            this.state = AGENT_STATES.IDLE; this.tasks = 0;
+            this.stats = { processed: 0, failed: 0 };
+        }
+        setState(state) { this.state = state; this.eventBus.emit('agentStateChange', { id: this.id, state }); }
+        addTask() {
+            this.tasks++; this.stats.processed++;
+            if (this.tasks > 5) this.setState(AGENT_STATES.BUSY);
+            this.eventBus.emit('agentUpdate', { id: this.id, tasks: this.tasks, state: this.state });
+        }
+        completeTask() {
+            if (this.tasks > 0) this.tasks--;
+            if (this.tasks === 0) this.setState(AGENT_STATES.IDLE);
+            this.eventBus.emit('agentUpdate', { id: this.id, tasks: this.tasks, state: this.state });
+        }
+        warn(message) {
+            this.setState(AGENT_STATES.WARNING);
+            this.eventBus.emit('event', this.eventBus.createEvent('alert', message, { agentId: this.id }));
+        }
+        success(message) { this.eventBus.emit('event', this.eventBus.createEvent('success', message, { agentId: this.id })); }
+    }
+
+    class AgentSystem {
+        constructor(eventBus) { this.eventBus = eventBus; this.agents = new Map(); }
+        init() {
+            DEPARTMENTS.forEach(dept => { this.agents.set(dept.id, new Agent(dept.id, dept.name, this.eventBus)); });
+            this.eventBus.on('agentUpdate', () => this.updateStats());
+            this.updateStats();
+        }
+        getAgent(id) { return this.agents.get(id); }
+        updateStats() {
+            this.stats = {
+                totalOrders: 1234 + Math.floor(Math.random() * 50),
+                productionEfficiency: 85 + Math.random() * 10,
+                qualityRate: 97 + Math.random() * 3,
+                equipmentOEE: 82 + Math.random() * 8,
+                inventoryTurnover: 4 + Math.random() * 2,
+                energyConsumption: 2800 + Math.random() * 200
+            };
+            this.eventBus.emit('statsUpdate', [
+                { label: '订单总量', value: this.stats.totalOrders, trend: 12.3 },
+                { label: '生产效率', value: this.stats.productionEfficiency.toFixed(1) + '%', trend: 5.2 },
+                { label: '质检良品率', value: this.stats.qualityRate.toFixed(1) + '%', trend: 1.8 },
+                { label: '设备 OEE', value: this.stats.equipmentOEE.toFixed(1) + '%', trend: 3.1 },
+                { label: '库存周转', value: this.stats.inventoryTurnover.toFixed(1) + '次', trend: -2.1 },
+                { label: '能耗 kWh', value: Math.round(this.stats.energyConsumption), trend: -4.5 }
+            ]);
+        }
+    }
+
+    // ============ PARTICLES ============
+    class Particle {
+        constructor(x, y, targetX, targetY, type = 'task') {
+            this.x = x; this.y = y; this.targetX = targetX; this.targetY = targetY; this.type = type;
+            this.size = 2 + Math.random() * 4; this.speed = 50 + Math.random() * 100;
+            this.alive = true; this.startX = x; this.startY = y;
+            const colors = { task: '#00d4ff', alert: '#ff6b35', success: '#00ff88', suggestion: '#00ff88' };
+            this.color = colors[type] || colors.task;
+        }
+        update(deltaTime) {
+            const dx = this.targetX - this.x, dy = this.targetY - this.y, dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 5) { this.alive = false; return; }
+            const move = this.speed * deltaTime;
+            this.x += (dx / dist) * move; this.y += (dy / dist) * move;
+        }
+        draw(ctx) {
+            if (!this.alive) return;
+            ctx.shadowColor = this.color; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color; ctx.fill(); ctx.shadowBlur = 0;
+        }
+    }
+
+    class ParticleSystem {
+        constructor() { this.particles = []; }
+        emit(x, y, targetX, targetY, type = 'task', count = 1) {
+            for (let i = 0; i < count; i++) {
+                const p = new Particle(x, y, targetX, targetY, type);
+                p.x += (Math.random() - 0.5) * 20; p.y += (Math.random() - 0.5) * 20;
+                this.particles.push(p);
+            }
+        }
+        update(deltaTime) { this.particles = this.particles.filter(p => p.alive); this.particles.forEach(p => p.update(deltaTime)); }
+        draw(ctx) { this.particles.forEach(p => p.draw(ctx)); }
+    }
+
+    // ============ RENDERER ============
+    class Renderer {
+        constructor(canvas) {
+            this.canvas = canvas; this.ctx = canvas.getContext('2d');
+            this.particles = new ParticleSystem(); this.lastTime = 0; this.animationId = null;
+            this.nodes = JSON.parse(JSON.stringify(DEPARTMENTS));
+        }
+        resize() { const rect = this.canvas.parentElement.getBoundingClientRect(); this.canvas.width = rect.width; this.canvas.height = rect.height; }
+        start() { this.resize(); window.addEventListener('resize', () => this.resize()); this.animate(0); }
+        stop() { if (this.animationId) cancelAnimationFrame(this.animationId); }
+        updateNode(nodeId, updates) { const node = this.nodes.find(n => n.id === nodeId); if (node) Object.assign(node, updates); }
+        emitParticles(fromId, toId, type = 'task') {
+            const from = this.nodes.find(n => n.id === fromId), to = this.nodes.find(n => n.id === toId);
+            if (from && to) this.particles.emit(from.x * this.canvas.width, from.y * this.canvas.height, to.x * this.canvas.width, to.y * this.canvas.height, type, 1 + Math.floor(Math.random() * 2));
+        }
+        animate(timestamp) {
+            const deltaTime = (timestamp - this.lastTime) / 1000;
+            if (deltaTime > 0) { this.lastTime = timestamp; this.render(deltaTime); }
+            this.animationId = requestAnimationFrame(t => this.animate(t));
+        }
+        render(deltaTime) {
+            const { ctx, canvas } = this;
+            ctx.fillStyle = '#0a0e17'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            this.drawGrid();
+            this.drawConnections();
+            this.particles.update(deltaTime); this.particles.draw(ctx);
+            this.nodes.forEach(node => this.drawNode(ctx, node, canvas.width, canvas.height));
+            const fpsEl = document.getElementById('fps-counter');
+            if (fpsEl) fpsEl.textContent = `${Math.round(1 / Math.max(deltaTime, 0.001))} FPS`;
+        }
+        drawGrid() {
+            const { ctx, canvas } = this;
+            ctx.strokeStyle = 'rgba(42, 58, 80, 0.3)'; ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+        }
+        drawConnections() {
+            const { ctx, canvas } = this;
+            CONNECTIONS.forEach(conn => {
+                const from = this.nodes.find(n => n.id === conn.from), to = this.nodes.find(n => n.id === conn.to);
+                if (from && to) {
+                    const x1 = from.x * canvas.width, y1 = from.y * canvas.height, x2 = to.x * canvas.width, y2 = to.y * canvas.height;
+                    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                    gradient.addColorStop(0, 'rgba(0, 212, 255, 0.3)'); gradient.addColorStop(1, 'rgba(0, 255, 136, 0.3)');
+                    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = gradient; ctx.lineWidth = 1.5; ctx.stroke();
+                }
+            });
+        }
+        drawNode(ctx, node, canvasWidth, canvasHeight) {
+            const x = node.x * canvasWidth, y = node.y * canvasHeight, radius = node.isCentral ? 70 : 50;
+            const statusColors = { idle: '#00ff88', busy: '#00d4ff', warning: '#ff6b35', error: '#ff3366' };
+            const statusColor = statusColors[node.status] || statusColors.idle;
+            ctx.shadowColor = statusColor; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = node.color; ctx.lineWidth = 3; ctx.stroke();
+            const taskRatio = Math.min(node.tasks / 10, 1);
+            ctx.beginPath(); ctx.arc(x, y, radius - 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * taskRatio);
+            ctx.strokeStyle = statusColor; ctx.lineWidth = 4; ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.arc(x, y, radius - 15, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(26, 35, 50, 0.9)'; ctx.fill();
+            ctx.fillStyle = node.color; ctx.font = 'bold 14px Microsoft YaHei';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(node.name, x, y);
+            if (node.tasks > 0) { ctx.fillStyle = '#e0e6ed'; ctx.font = '11px Microsoft YaHei'; ctx.fillText(`${node.tasks} 任务`, x, y + 18); }
+            if (node.isCentral) {
+                const pulse = (Date.now() % 2000) / 2000;
+                ctx.beginPath(); ctx.arc(x, y, radius + 10 + pulse * 20, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 107, 53, ${1 - pulse})`; ctx.lineWidth = 2; ctx.stroke();
+            }
+        }
+    }
+
+    // ============ BUSINESS FLOW ============
+    class BusinessFlow {
+        constructor(agentSystem, eventBus) { this.agentSystem = agentSystem; this.eventBus = eventBus; this.renderer = null; this.intervals = []; }
+        setRenderer(renderer) { this.renderer = renderer; }
+        start() {
+            this.intervals.push(setInterval(() => this.generateOrder(), 5000 + Math.random() * 5000));
+            this.intervals.push(setInterval(() => { if (Math.random() < 0.3) this.triggerEquipmentAlert(); }, 8000));
+            this.intervals.push(setInterval(() => this.monitorEnergy(), 3000));
+            this.intervals.push(setInterval(() => { if (Math.random() < 0.2) this.checkInventory(); }, 10000));
+            this.intervals.push(setInterval(() => this.generateAISuggestion(), 15000));
+            this.intervals.push(setInterval(() => this.datahubAnalysis(), 2000));
+            this.eventBus.emit('event', this.eventBus.createEvent('info', '工厂大脑启动，开始监控'));
+        }
+        generateOrder() {
+            const orderAgent = this.agentSystem.getAgent('order'); orderAgent.addTask();
+            if (this.renderer) this.renderer.emitParticles('order', 'design', 'task');
+            this.eventBus.emit('event', this.eventBus.createEvent('info', `新订单进入 #${Date.now() % 10000}`));
+            setTimeout(() => {
+                const designAgent = this.agentSystem.getAgent('design'); designAgent.addTask();
+                if (this.renderer) this.renderer.emitParticles('design', 'production', 'task');
+            }, 2000);
+            setTimeout(() => {
+                const productionAgent = this.agentSystem.getAgent('production'); productionAgent.addTask();
+                if (this.renderer) this.renderer.emitParticles('production', 'quality', 'task');
+            }, 4000);
+            setTimeout(() => {
+                const qualityAgent = this.agentSystem.getAgent('quality'); qualityAgent.addTask();
+                const isPass = Math.random() > 0.05;
+                if (isPass) {
+                    if (this.renderer) this.renderer.emitParticles('quality', 'warehouse', 'success');
+                    this.eventBus.emit('event', this.eventBus.createEvent('success', `订单通过质检`));
+                    setTimeout(() => {
+                        const warehouseAgent = this.agentSystem.getAgent('warehouse'); warehouseAgent.addTask(); qualityAgent.completeTask();
+                        setTimeout(() => {
+                            const financeAgent = this.agentSystem.getAgent('finance'), afterSalesAgent = this.agentSystem.getAgent('afterSales');
+                            financeAgent.addTask(); afterSalesAgent.addTask();
+                            if (this.renderer) { this.renderer.emitParticles('warehouse', 'finance', 'task'); this.renderer.emitParticles('finance', 'afterSales', 'task'); }
+                            setTimeout(() => {
+                                financeAgent.completeTask(); afterSalesAgent.completeTask(); orderAgent.completeTask();
+                                this.agentSystem.getAgent('design').completeTask(); this.agentSystem.getAgent('production').completeTask();
+                                warehouseAgent.completeTask();
+                                this.eventBus.emit('event', this.eventBus.createEvent('success', `订单完成交付`));
+                            }, 3000);
+                        }, 2000);
+                    }, 2000);
+                } else {
+                    qualityAgent.warn('检测到不良品');
+                    if (this.renderer) this.renderer.emitParticles('quality', 'production', 'alert');
+                    this.eventBus.emit('event', this.eventBus.createEvent('alert', `质检告警：发现缺陷`));
+                    setTimeout(() => qualityAgent.completeTask(), 1000);
+                }
+            }, 2000);
+        }
+        triggerEquipmentAlert() {
+            const equipmentAgent = this.agentSystem.getAgent('equipment');
+            equipmentAgent.warn(`设备#${Math.floor(Math.random() * 10) + 1} 温度异常`);
+            if (this.renderer) { this.renderer.updateNode('equipment', { status: 'warning' }); this.renderer.emitParticles('equipment', 'production', 'alert'); }
+            setTimeout(() => { if (this.renderer) this.renderer.updateNode('equipment', { status: 'idle' }); }, 3000);
+        }
+        monitorEnergy() {
+            const consumption = 2800 + Math.random() * 400;
+            if (consumption > 3000) {
+                const energyAgent = this.agentSystem.getAgent('energy');
+                energyAgent.warn(`能耗偏高: ${Math.round(consumption)} kWh`);
+                if (this.renderer) this.renderer.emitParticles('energy', 'datahub', 'alert');
+            }
+        }
+        checkInventory() {
+            if (Math.random() < 0.5) {
+                const warehouseAgent = this.agentSystem.getAgent('warehouse'), purchaseAgent = this.agentSystem.getAgent('purchase');
+                warehouseAgent.warn('原料库存不足'); purchaseAgent.addTask();
+                if (this.renderer) this.renderer.emitParticles('warehouse', 'purchase', 'alert');
+                this.eventBus.emit('event', this.eventBus.createEvent('alert', `库存预警：原料不足`));
+                setTimeout(() => { purchaseAgent.completeTask(); if (this.renderer) this.renderer.emitParticles('purchase', 'warehouse', 'success'); }, 2000);
+            }
+        }
+        generateAISuggestion() {
+            const suggestions = ['建议优化排产策略，减少换模时间', '质检发现裂纹缺陷集中，建议检查设备精度', '能源消耗峰值在14-16点，建议错峰生产', '库存周转率下降，建议调整采购策略'];
+            const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+            this.eventBus.emit('event', this.eventBus.createEvent('success', `AI建议: ${suggestion}`));
+            if (this.renderer) { this.renderer.emitParticles('datahub', 'order', 'suggestion'); this.renderer.emitParticles('datahub', 'production', 'suggestion'); }
+        }
+        datahubAnalysis() {
+            const datahub = this.agentSystem.getAgent('datahub');
+            datahub.setState('busy');
+            setTimeout(() => datahub.setState('idle'), 500);
+        }
+    }
+
+    // ============ EVOLUTION DATA ============
+    // maxAiRate: 根据模具工厂业务特性，各部门最终 AI 化程度不同
+    // - 高 AI 化(80-90%): 订单(AI接单)、质检(视觉检测)、设备维护(IoT预测)、仓储(物流自动化)
+    // - 中高 AI 化(60-70%): 设计(CAD辅助)、采购(供应商AI)
+    // - 中等 AI 化(50-60%): 生产(部分自动化)、能源(智能调度)、财务(自动核算)
+    // - 较低 AI 化(30-40%): 售后(AI客服)、人力资源(智能排班)
+    const DEPT_EVOLUTION = [
+        { id: 'order', name: '订单管理', x: 0.15, y: 0.25, humanCount: 5, aiRate: 10, maxAiRate: 85, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '交付准时率', value: 85, initial: 85, unit: '%', better: 'higher' }, skills: [], mcps: [] },
+        { id: 'design', name: '设计部', x: 0.35, y: 0.25, humanCount: 5, aiRate: 10, maxAiRate: 65, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '设计周期', value: 15, initial: 15, unit: '天', better: 'lower' }, skills: [], mcps: [] },
+        { id: 'production', name: '生产车间', x: 0.55, y: 0.25, humanCount: 5, aiRate: 10, maxAiRate: 55, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '产能利用率', value: 70, initial: 70, unit: '%', better: 'higher' }, skills: [], mcps: [] },
+        { id: 'quality', name: '质检部门', x: 0.75, y: 0.25, humanCount: 5, aiRate: 10, maxAiRate: 90, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '良率', value: 92, initial: 92, unit: '%', better: 'higher' }, skills: ['vision'], mcps: [] },
+        { id: 'equipment', name: '设备维护', x: 0.85, y: 0.45, humanCount: 5, aiRate: 10, maxAiRate: 85, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '设备故障率', value: 15, initial: 15, unit: '%', better: 'lower' }, skills: [], mcps: ['sensor'] },
+        { id: 'energy', name: '能源管理', x: 0.85, y: 0.65, humanCount: 4, aiRate: 10, maxAiRate: 55, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '能耗效率', value: 75, initial: 75, unit: '%', better: 'higher' }, skills: [], mcps: [] },
+        { id: 'warehouse', name: '仓储管理', x: 0.75, y: 0.8, humanCount: 5, aiRate: 10, maxAiRate: 85, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '库存周转率', value: 8, initial: 8, unit: '次/年', better: 'higher' }, skills: ['logistics'], mcps: [] },
+        { id: 'purchase', name: '采购部', x: 0.55, y: 0.8, humanCount: 5, aiRate: 10, maxAiRate: 65, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '采购成本率', value: 95, initial: 95, unit: '%', better: 'lower' }, skills: [], mcps: ['erp'] },
+        { id: 'finance', name: '财务部', x: 0.35, y: 0.8, humanCount: 5, aiRate: 10, maxAiRate: 55, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '账务准确率', value: 98, initial: 98, unit: '%', better: 'higher' }, skills: ['accounting'], mcps: [] },
+        { id: 'afterSales', name: '售后跟踪', x: 0.15, y: 0.8, humanCount: 5, aiRate: 10, maxAiRate: 40, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '客户满意度', value: 80, initial: 80, unit: '%', better: 'higher' }, skills: [], mcps: [] },
+        { id: 'hr', name: '人力资源', x: 0.15, y: 0.55, humanCount: 4, aiRate: 10, maxAiRate: 35, evolutionProgress: 0, inEvolution: false, underReview: false, kpi: { name: '排班效率', value: 70, initial: 70, unit: '%', better: 'higher' }, skills: [], mcps: [] },
+        { id: 'datahub', name: '数据中枢', x: 0.55, y: 0.5, humanCount: 4, aiRate: 60, maxAiRate: 95, evolutionProgress: 60, inEvolution: false, underReview: false, kpi: { name: '数据处理及时率', value: 85, initial: 85, unit: '%', better: 'higher' }, skills: ['analytics'], mcps: ['ai'] }
+    ];
+
+    // 审查 Agent 居中
+    const REVIEW_AGENT = { x: 0.5, y: 0.5, status: 'active', pulsePhase: 0 };
+    const EVOLUTION_AGENT = { x: 0.65, y: 0.5, status: 'active', pulsePhase: 0 };
+
+    const DEPT_CONNECTIONS_EVO = [
+        // 事件流（业务流）- 模具制造业务流程
+        { from: 'order', to: 'design', type: 'event' },
+        { from: 'design', to: 'production', type: 'event' },
+        { from: 'production', to: 'quality', type: 'event' },
+        { from: 'production', to: 'equipment', type: 'event' },
+        { from: 'quality', to: 'warehouse', type: 'event' },
+        { from: 'equipment', to: 'energy', type: 'event' },
+        { from: 'energy', to: 'production', type: 'event' },
+        { from: 'warehouse', to: 'purchase', type: 'event' },
+        { from: 'purchase', to: 'finance', type: 'event' },
+        { from: 'finance', to: 'afterSales', type: 'event' },
+        { from: 'afterSales', to: 'order', type: 'event' },
+        { from: 'hr', to: 'production', type: 'event' },
+        // 数据流 - 中枢到各部门的下发
+        { from: 'datahub', to: 'order', type: 'data' },
+        { from: 'datahub', to: 'design', type: 'data' },
+        { from: 'datahub', to: 'production', type: 'data' },
+        { from: 'datahub', to: 'quality', type: 'data' },
+        { from: 'datahub', to: 'finance', type: 'data' },
+        { from: 'datahub', to: 'warehouse', type: 'data' },
+        { from: 'datahub', to: 'purchase', type: 'data' },
+        { from: 'datahub', to: 'equipment', type: 'data' },
+        { from: 'datahub', to: 'energy', type: 'data' },
+        { from: 'datahub', to: 'hr', type: 'data' },
+        { from: 'datahub', to: 'afterSales', type: 'data' },
+        // 进化/审查 Agent 到各部门的连线
+        { from: 'evolutionAgent', to: 'datahub', type: 'evolution' },
+        { from: 'reviewAgent', to: 'datahub', type: 'review' }
+    ];
+
+    function getMaturityColor(level) {
+        if (level < 20) return '#ff6b35';
+        if (level < 50) return '#ffcc00';
+        if (level < 80) return '#00d4ff';
+        return '#00ff88';
+    }
+
+    function getNodeBaseColor(type) {
+        return type === 'human' ? '#8b9cb3' : '#00d4ff';
+    }
+
+    // ============ DRAWING FUNCTIONS ============
+    function drawStickFigure(ctx, x, y, size, color, alpha = 1) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(x, y - size * 0.3, size * 0.15, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - size * 0.15); ctx.lineTo(x, y + size * 0.2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - size * 0.2, y); ctx.lineTo(x + size * 0.2, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y + size * 0.2); ctx.lineTo(x - size * 0.15, y + size * 0.4);
+        ctx.moveTo(x, y + size * 0.2); ctx.lineTo(x + size * 0.15, y + size * 0.4); ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawRobot(ctx, x, y, size, color, alpha = 1, time = Date.now()) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15;
+        // 六边形身体
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI / 3) - Math.PI / 6;
+            const px = x + Math.cos(angle) * size * 0.35;
+            const py = y + Math.sin(angle) * size * 0.35;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(26, 35, 50, 0.9)';
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // 眼睛 - 带眨眼动画
+        const blinkPhase = (time / 200) % 100;
+        const eyeHeight = blinkPhase < 5 ? 1 : 4;
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.ellipse(x - size * 0.1, y - size * 0.05, 4, eyeHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + size * 0.1, y - size * 0.05, 4, eyeHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 天线
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - size * 0.35); ctx.lineTo(x, y - size * 0.5); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - size * 0.55, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+    // 绘制部门人形（上排）
+    function drawDeptHumans(ctx, x, y, size, count, color, alpha = 1) {
+        if (count <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const spacing = size * 0.4;
+        const startX = x - ((count - 1) * spacing) / 2;
+        for (let i = 0; i < count; i++) {
+            const hx = startX + i * spacing;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            // 头
+            ctx.beginPath(); ctx.arc(hx, y - size * 0.25, size * 0.12, 0, Math.PI * 2); ctx.stroke();
+            // 身体
+            ctx.beginPath(); ctx.moveTo(hx, y - size * 0.13); ctx.lineTo(hx, y + size * 0.15); ctx.stroke();
+            // 手臂
+            ctx.beginPath(); ctx.moveTo(hx - size * 0.15, y); ctx.lineTo(hx + size * 0.15, y); ctx.stroke();
+            // 腿
+            ctx.beginPath(); ctx.moveTo(hx, y + size * 0.15); ctx.lineTo(hx - size * 0.1, y + size * 0.3);
+            ctx.moveTo(hx, y + size * 0.15); ctx.lineTo(hx + size * 0.1, y + size * 0.3); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // 绘制部门机器人（下排，单个）
+    function drawDeptRobot(ctx, x, y, size, color, time) {
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12;
+        // 六边形身体
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI / 3) - Math.PI / 6;
+            const px = x + Math.cos(angle) * size * 0.35;
+            const py = y + Math.sin(angle) * size * 0.35;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(26, 35, 50, 0.9)';
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // 眼睛
+        const blinkPhase = (time / 200) % 100;
+        const eyeH = blinkPhase < 5 ? 1 : 3;
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.ellipse(x - size * 0.1, y - size * 0.05, 3, eyeH, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + size * 0.1, y - size * 0.05, 3, eyeH, 0, 0, Math.PI * 2); ctx.fill();
+        // 天线
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - size * 0.35); ctx.lineTo(x, y - size * 0.45); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - size * 0.5, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawReviewAgent(ctx, x, y, size, phase) {
+        ctx.save();
+        // 外圈紫色光环
+        const pulseSize = size + Math.sin(phase) * 6;
+        ctx.beginPath(); ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(155, 89, 182, ${0.3 + Math.sin(phase) * 0.2})`; ctx.lineWidth = 3; ctx.stroke();
+        // 内圈
+        ctx.beginPath(); ctx.arc(x, y, size * 0.75, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(155, 89, 182, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.shadowColor = '#9b59b6'; ctx.shadowBlur = 20;
+        // 六边形身体
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI / 3) - Math.PI / 6;
+            const px = x + Math.cos(angle) * size * 0.4;
+            const py = y + Math.sin(angle) * size * 0.4;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(50, 30, 70, 0.9)'; ctx.fill();
+        ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 2; ctx.stroke();
+        // 眼睛
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#9b59b6';
+        ctx.beginPath(); ctx.arc(x - size * 0.12, y - size * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + size * 0.12, y - size * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+        // 天线
+        ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - size * 0.4); ctx.lineTo(x, y - size * 0.55); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - size * 0.6, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#9b59b6'; ctx.font = 'bold 11px Microsoft YaHei'; ctx.textAlign = 'center';
+        ctx.fillText('审查 Agent', x, y + size + 18);
+        ctx.restore();
+    }
+
+    function drawEvolutionAgent(ctx, x, y, size, phase) {
+        ctx.save();
+        // 外圈青绿光环
+        const pulseSize = size + Math.sin(phase) * 6;
+        ctx.beginPath(); ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 212, 255, ${0.3 + Math.sin(phase) * 0.2})`; ctx.lineWidth = 3; ctx.stroke();
+        // 内圈
+        ctx.beginPath(); ctx.arc(x, y, size * 0.75, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.shadowColor = '#00d4ff'; ctx.shadowBlur = 20;
+        // 六边形身体
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI / 3) - Math.PI / 6;
+            const px = x + Math.cos(angle) * size * 0.4;
+            const py = y + Math.sin(angle) * size * 0.4;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(20, 40, 50, 0.9)'; ctx.fill();
+        ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 2; ctx.stroke();
+        // 眼睛
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00d4ff';
+        ctx.beginPath(); ctx.arc(x - size * 0.12, y - size * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + size * 0.12, y - size * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+        // 天线
+        ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - size * 0.4); ctx.lineTo(x, y - size * 0.55); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - size * 0.6, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#00d4ff'; ctx.font = 'bold 11px Microsoft YaHei'; ctx.textAlign = 'center';
+        ctx.fillText('进化 Agent', x, y + size + 18);
+        ctx.restore();
+    }
+
+    class EvolutionParticle {
+        constructor(startX, startY, targetX, targetY) {
+            this.x = startX; this.y = startY; this.targetX = targetX; this.targetY = targetY;
+            this.size = 3 + Math.random() * 4; this.speed = 150 + Math.random() * 100;
+            this.alive = true; this.color = Math.random() > 0.5 ? '#00ff88' : '#00d4ff';
+        }
+        update(dt) {
+            const dx = this.targetX - this.x, dy = this.targetY - this.y, dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 10) { this.alive = false; return; }
+            this.x += (dx / dist) * this.speed * dt; this.y += (dy / dist) * this.speed * dt;
+        }
+        draw(ctx) {
+            if (!this.alive) return;
+            ctx.save(); ctx.shadowColor = this.color; ctx.shadowBlur = 15;
+            ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }
+    }
+
+    class DataFlowParticle {
+        constructor(x1, y1, x2, y2, aiRate = 10, speed = 0.15) {
+            this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2;
+            this.aiRate = aiRate;
+            this.t = 0;
+            this.speed = speed;
+            this.alive = true;
+        }
+        update(dt) {
+            // 单向流动：从起点到终点
+            this.t += this.speed * dt;
+            if (this.t >= 1) {
+                this.alive = false; // 到达终点后消失
+            }
+        }
+        getColor() {
+            // 根据AI率显示不同颜色：低AI率橙色，高AI率青色
+            const g = Math.round(120 + (this.aiRate / 100) * 135);
+            return `rgba(255, ${g}, 50, 0.85)`;
+        }
+        draw(ctx) {
+            if (!this.alive) return;
+            const x = this.x1 + (this.x2 - this.x1) * this.t;
+            const y = this.y1 + (this.y2 - this.y1) * this.t;
+            const color = this.getColor();
+            ctx.save();
+            ctx.shadowColor = color; ctx.shadowBlur = 12;
+            ctx.fillStyle = color;
+            // 统一用圆形表示数据流粒子
+            ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // ============ EXPANSION WAVE (光波扩散) ============
+    class ExpansionWave {
+        constructor(centerX, centerY, maxRadius, color, duration = 3000) {
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.radius = 0;
+            this.maxRadius = maxRadius;
+            this.color = color;
+            this.duration = duration;
+            this.elapsed = 0;
+            this.alive = true;
+            this.width = 4;
+        }
+        update(dt) {
+            this.elapsed += dt * 1000;
+            this.radius = (this.elapsed / this.duration) * this.maxRadius;
+            if (this.elapsed >= this.duration) {
+                this.alive = false;
+            }
+        }
+        draw(ctx) {
+            if (!this.alive) return;
+            const alpha = Math.max(0, 1 - (this.radius / this.maxRadius));
+            ctx.save();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = this.width;
+            ctx.globalAlpha = alpha * 0.8;
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            // 内圈光晕
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.lineWidth = 8;
+            ctx.stroke();
+            ctx.restore();
+        }
+        // 检查部门是否在光波范围内
+        isInWave(deptX, deptY) {
+            const dx = deptX - this.centerX;
+            const dy = deptY - this.centerY;
+            return Math.sqrt(dx * dx + dy * dy) <= this.radius;
+        }
+    }
+
+    class CollaborationFlow {
+        constructor(x1, y1, x2, y2) {
+            this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2; this.particles = [];
+        }
+        update(dt) {
+            if (this.particles.length < 5 && Math.random() < 0.1) {
+                this.particles.push({ t: Math.random(), speed: 30 + Math.random() * 20, alive: true });
+            }
+            this.particles = this.particles.filter(p => p.alive);
+            this.particles.forEach(p => {
+                p.t += p.speed * dt / Math.sqrt((this.x2-this.x1)**2 + (this.y2-this.y1)**2);
+                if (p.t > 1) { p.speed = -(30 + Math.random() * 20); p.t = 1; }
+                if (p.t < 0) p.alive = false;
+            });
+        }
+        draw(ctx) {
+            ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(this.x1, this.y1); ctx.lineTo(this.x2, this.y2); ctx.stroke(); ctx.setLineDash([]);
+            this.particles.forEach(p => {
+                const x = this.x1 + (this.x2 - this.x1) * p.t, y = this.y1 + (this.y2 - this.y1) * p.t;
+                ctx.fillStyle = '#00d4ff'; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+            }); ctx.restore();
+        }
+    }
+
+    // ============ EVOLUTION ENGINE ============
+    class EvolutionEngine {
+        constructor() {
+            this.departments = JSON.parse(JSON.stringify(DEPT_EVOLUTION));
+            this.reviewAgent = { ...REVIEW_AGENT };
+            this.evolutionAgent = { ...EVOLUTION_AGENT };
+            this.expansionWave = null;       // 当前扩散光波
+            this.phase = 'waiting';          // 'waiting', 'idle', 'evolution_spread', 'evolution_waiting', 'review_spread', 'review_waiting', 'cooldown'
+            this.dataFlows = [];
+            this.evolutionSpeed = 1;
+            this.paused = false;
+            this.logs = [];
+            this.reviewQueue = [];
+            this.evolutionQueue = [];
+            // 3秒延迟后开始第一波演进
+            this.addLog('系统初始化中...', 'info');
+            setTimeout(() => {
+                this.phase = 'idle';
+                this.addLog('演进开始', 'info');
+            }, 3000);
+            this.initKPIImprovement();
+        }
+        initKPIImprovement() {
+            setInterval(() => {
+                if (this.paused) return;
+                this.departments.forEach(dept => {
+                    if (dept.kpi && !dept.underReview && !dept.inEvolution) {
+                        const improvement = (Math.random() * 1.5);
+                        if (dept.kpi.better === 'higher') {
+                            dept.kpi.value = Math.min(100, dept.kpi.value + improvement);
+                        } else {
+                            dept.kpi.value = Math.max(0, dept.kpi.value - improvement);
+                        }
+                    }
+                });
+            }, 2000);
+        }
+        kpiPassed(dept) {
+            if (!dept.kpi) return false;
+            const { value, initial, better } = dept.kpi;
+            if (better === 'higher') return value > initial;
+            return value < initial;
+        }
+        getCanvasCenter() {
+            const canvas = document.getElementById('mainCanvas2');
+            if (!canvas) return { x: 0, y: 0 };
+            return { x: canvas.width / 2, y: canvas.height / 2 };
+        }
+        getMaxRadius() {
+            const canvas = document.getElementById('mainCanvas2');
+            if (!canvas) return 0;
+            return Math.max(canvas.width, canvas.height);
+        }
+        update(dt) {
+            if (this.paused) return;
+            this.reviewAgent.pulsePhase += dt * 3;
+            this.evolutionAgent.pulsePhase += dt * 3;
+
+            const canvas = document.getElementById('mainCanvas2');
+            if (!canvas) return;
+
+            // 更新扩散光波
+            if (this.expansionWave) {
+                this.expansionWave.update(dt);
+
+                // 进化光波扩散阶段 - 检查哪些部门被波及（跳过已达最大AI率的部门）
+                if (this.phase === 'evolution_spread') {
+                    this.departments.forEach(dept => {
+                        if (dept.aiRate >= dept.maxAiRate) return; // 跳过已达最大AI率的部门
+                        const deptX = dept.x * canvas.width;
+                        const deptY = dept.y * canvas.height;
+                        if (this.expansionWave.isInWave(deptX, deptY)) {
+                            dept.inEvolution = true;
+                            dept.evolutionProgress = 0;
+                        }
+                    });
+                }
+
+                // 审查光波扩散阶段 - 检查哪些部门被波及
+                if (this.phase === 'review_spread') {
+                    this.departments.forEach(dept => {
+                        // 如果部门已达最大AI率，跳过审查
+                        if (dept.aiRate >= dept.maxAiRate) {
+                            dept.underReview = false;
+                            dept.reviewProgress = 100; // 视为已完成
+                            return;
+                        }
+                        const deptX = dept.x * canvas.width;
+                        const deptY = dept.y * canvas.height;
+                        if (this.expansionWave.isInWave(deptX, deptY)) {
+                            dept.underReview = true;
+                            dept.inEvolution = false;  // 清除演进状态
+                            dept.evolutionProgress = 0;  // 清除演进进度
+                            dept.reviewProgress = 0;
+                        }
+                    });
+                }
+
+                // 光波结束
+                if (!this.expansionWave.alive) {
+                    this.expansionWave = null;
+                    if (this.phase === 'evolution_spread') {
+                        // 进化光波结束，进入等待演进完成阶段
+                        this.phase = 'evolution_waiting';
+                        this.addLog('进化光波扩散完毕，等待部门演进完成', 'info');
+                    } else if (this.phase === 'review_spread') {
+                        // 审查光波结束，进入等待审查完成阶段
+                        this.phase = 'review_waiting';
+                        this.addLog('审查光波扩散完毕，等待部门审查完成', 'info');
+                    }
+                }
+            }
+
+            // 空闲阶段，发出进化光波（从进化Agent位置）
+            if (!this.expansionWave && this.phase === 'idle') {
+                const evoX = this.evolutionAgent.x * canvas.width;
+                const evoY = this.evolutionAgent.y * canvas.height;
+                this.expansionWave = new ExpansionWave(evoX, evoY, this.getMaxRadius() * 1.5, '#00d4ff', 4000);
+                this.phase = 'evolution_spread';
+                this.departments.forEach(d => {
+                    d.inEvolution = false;
+                    d.evolutionProgress = 0;
+                    d.underReview = false;
+                    d.reviewProgress = 0;
+                });
+                this.addLog('进化光波开始扩散', 'info');
+            }
+
+            // 演进进度更新
+            this.departments.forEach(dept => {
+                if (dept.inEvolution) {
+                    dept.evolutionProgress += dt * 15 * this.evolutionSpeed;
+                    if (dept.evolutionProgress >= 100) {
+                        dept.evolutionProgress = 100;
+                    }
+                }
+            });
+
+            // 审查进度更新
+            this.departments.forEach(dept => {
+                if (dept.underReview) {
+                    dept.reviewProgress += dt * 10 * this.evolutionSpeed;
+                    if (dept.reviewProgress >= 100) {
+                        dept.reviewProgress = 100;
+                    }
+                }
+            });
+
+            // 检查演进是否完成，所有部门演进完成或已达各自最大AI率，等待3秒后进入审查阶段
+            if (this.phase === 'evolution_waiting' && !this.expansionWave) {
+                const allDone = this.departments.every(d => d.evolutionProgress >= 100 || d.aiRate >= d.maxAiRate);
+                if (allDone) {
+                    this.phase = 'evolution_review_delay';
+                    this.addLog('所有部门演进完成，等待3秒后开始审查', 'info');
+                    // 重置所有状态
+                    this.departments.forEach(d => {
+                        d.inEvolution = false;
+                        d.underReview = false;
+                        d.evolutionProgress = 0;
+                        d.reviewProgress = 0;
+                    });
+                    // 3秒后创建审查光波
+                    const self = this;
+                    setTimeout(() => {
+                        if (self.phase === 'evolution_review_delay') {
+                            const c = document.getElementById('mainCanvas2');
+                            if (c) {
+                                const revX = self.reviewAgent.x * c.width;
+                                const revY = self.reviewAgent.y * c.height;
+                                self.expansionWave = new ExpansionWave(revX, revY, self.getMaxRadius() * 1.5, '#9b59b6', 4000);
+                                self.phase = 'review_spread';
+                                self.addLog('审查光波开始扩散', 'info');
+                            }
+                        }
+                    }, 3000);
+                }
+            }
+
+            // 检查审查是否完成，所有部门审查完成，一轮结束
+            if (this.phase === 'review_waiting' && !this.expansionWave) {
+                // 只有 underReview=true 的部门才需要 reviewProgress >= 100
+                const allDone = this.departments.every(d => !d.underReview || d.reviewProgress >= 100);
+                if (allDone) {
+                    // 所有部门审查完成，一轮结束，更新AI率（各部门的最大上限）
+                    this.departments.forEach(d => {
+                        d.aiRate = Math.min(d.maxAiRate, d.aiRate + 20);
+                        // 立即清理状态，光环和进度条消失
+                        d.underReview = false;
+                        d.inEvolution = false;
+                        d.evolutionProgress = 0;
+                        d.reviewProgress = 0;
+                    });
+                    this.phase = 'cooldown';
+                    this.addLog('=== 一轮演进完成 ===', 'success');
+                    const self = this;
+                    setTimeout(() => {
+                        self.phase = 'idle';
+                        self.addLog('开始新一轮演进', 'info');
+                    }, 5000);
+                }
+            }
+
+            // 更新数据流 - 简化的业务流
+            this.updateDataFlows(dt, canvas);
+        }
+
+        updateDataFlows(dt, canvas) {
+            // 限制数据流数量，最多6条
+            if (this.dataFlows.length >= 6) {
+                this.dataFlows.forEach(f => f.update(dt));
+                this.dataFlows = this.dataFlows.filter(f => f.alive);
+                return;
+            }
+
+            // 根据AI率控制生成间隔（AI越高，间隔越短，数据流越快）
+            const avgAiRate = this.departments.reduce((sum, d) => sum + d.aiRate, 0) / this.departments.length;
+            const spawnInterval = 2000 - (avgAiRate / 100) * 1200; // 2000ms~800ms
+
+            this.spawnTimer = (this.spawnTimer || 0) + dt * 1000;
+            if (this.spawnTimer < spawnInterval) {
+                this.dataFlows.forEach(f => f.update(dt));
+                this.dataFlows = this.dataFlows.filter(f => f.alive);
+                return;
+            }
+            this.spawnTimer = 0;
+
+            // 业务流：订单 -> 设计 -> 生产 -> 质检 -> 仓储 -> 采购 -> 财务 -> 售后 -> 订单
+            const businessFlow = ['order', 'design', 'production', 'quality', 'warehouse', 'purchase', 'finance', 'afterSales'];
+            // 随机选一个环节开始
+            const startIdx = Math.floor(Math.random() * businessFlow.length);
+            const fromId = businessFlow[startIdx];
+            const toId = businessFlow[(startIdx + 1) % businessFlow.length];
+
+            const from = this.departments.find(d => d.id === fromId);
+            const to = this.departments.find(d => d.id === toId);
+            if (!from || !to) return;
+
+            // AI化程度越高，数据流速度越快
+            const flowAiRate = (from.aiRate + to.aiRate) / 2;
+            const speed = 0.1 + (flowAiRate / 100) * 0.3; // 0.1~0.4
+
+            this.dataFlows.push(new DataFlowParticle(
+                from.x * canvas.width, from.y * canvas.height,
+                to.x * canvas.width, to.y * canvas.height,
+                flowAiRate,
+                speed
+            ));
+
+            this.dataFlows.forEach(f => f.update(dt));
+            this.dataFlows = this.dataFlows.filter(f => f.alive);
+        }
+        startNewRound() {
+            this.phase = 'idle';
+            this.departments.forEach(d => {
+                d.underReview = false;
+                d.inEvolution = false;
+            });
+            this.addLog('开始新一轮演进', 'info');
+        }
+        addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            this.logs.unshift({ time, message, type });
+            if (this.logs.length > 50) this.logs.pop();
+        }
+    }
+
+    function drawDeptIcon(ctx, x, y, deptId) {
+        const icons = {
+            order: '📋', design: '✏️', production: '🏭', quality: '🔍',
+            equipment: '⚙️', energy: '⚡', warehouse: '📦', purchase: '🛒',
+            finance: '💰', afterSales: '🎧', hr: '👥', datahub: '🧠'
+        };
+        ctx.save();
+        ctx.font = '18px Arial';
+        ctx.fillText(icons[deptId] || '🏢', x, y);
+        ctx.restore();
+    }
+
+    // ============ RENDER FUNCTIONS ============
+    function drawEvolutionGrid(ctx, w, h) {
+        ctx.strokeStyle = 'rgba(42, 58, 80, 0.3)'; ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    }
+
+    function renderEvolution(ctx, canvas, engine) {
+        const w = canvas.width, h = canvas.height;
+        ctx.fillStyle = '#0a0e17'; ctx.fillRect(0, 0, w, h);
+        drawEvolutionGrid(ctx, w, h);
+
+        // 绘制连接线（根据类型不同颜色）
+        ctx.save();
+        DEPT_CONNECTIONS_EVO.forEach(conn => {
+            let from, to;
+            let x1, y1, x2, y2;
+            let color, lineWidth;
+
+            // 获取起点和终点坐标
+            if (conn.from === 'evolutionAgent') {
+                x1 = engine.evolutionAgent.x * w;
+                y1 = engine.evolutionAgent.y * h;
+            } else if (conn.from === 'reviewAgent') {
+                x1 = engine.reviewAgent.x * w;
+                y1 = engine.reviewAgent.y * h;
+            } else {
+                from = engine.departments.find(d => d.id === conn.from);
+                if (from) { x1 = from.x * w; y1 = from.y * h; }
+            }
+
+            if (conn.to === 'evolutionAgent') {
+                x2 = engine.evolutionAgent.x * w;
+                y2 = engine.evolutionAgent.y * h;
+            } else if (conn.to === 'reviewAgent') {
+                x2 = engine.reviewAgent.x * w;
+                y2 = engine.reviewAgent.y * h;
+            } else {
+                to = engine.departments.find(d => d.id === conn.to);
+                if (to) { x2 = to.x * w; y2 = to.y * h; }
+            }
+
+            if (!x1 || !y1 || !x2 || !y2) return;
+
+            // 统一使用简单灰色连接线
+            color = 'rgba(60, 80, 100, 0.3)';
+            lineWidth = 1;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        });
+        ctx.restore();
+
+        // 绘制数据流粒子
+        engine.dataFlows.forEach(f => f.draw(ctx));
+
+        // 绘制扩散光波
+        if (engine.expansionWave) engine.expansionWave.draw(ctx);
+
+        // 绘制审查 Agent（居中）
+        drawReviewAgent(ctx, engine.reviewAgent.x * w, engine.reviewAgent.y * h, 50, engine.reviewAgent.pulsePhase);
+
+        // 绘制进化 Agent（上方）
+        drawEvolutionAgent(ctx, engine.evolutionAgent.x * w, engine.evolutionAgent.y * h, 50, engine.evolutionAgent.pulsePhase);
+
+        // 绘制部门节点
+        engine.departments.forEach(dept => {
+            const x = dept.x * w, y = dept.y * h, size = 45;
+
+            // 计算演进相关数值
+            const aiRate = dept.aiRate;
+            const maxAiRate = dept.maxAiRate || 90;
+            // 人类数量：5个初始，根据maxAiRate计算，最多减少到1个
+            const humanCount = maxAiRate >= 50 ? Math.max(1, Math.round((1 - aiRate / maxAiRate) * 5)) : 5;
+            // 技能光点：人类转化的数量，根据ai率动态变化
+            const dotCount = maxAiRate >= 50 ? Math.round((aiRate / maxAiRate) * 5) : 0;
+            const maturityColor = getMaturityColor(aiRate);
+
+            // 光圈效果（只在演进或审查状态时显示）
+            const pulse = 0.4 + 0.3 * Math.sin(Date.now() / 200);
+            if (dept.inEvolution || dept.underReview) {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(x, y, size * 1.3, 0, Math.PI * 2);
+                if (dept.inEvolution) {
+                    // 演进中：青色
+                    ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 3; ctx.globalAlpha = pulse; ctx.stroke();
+                } else if (dept.underReview) {
+                    // 审查中：紫色
+                    ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 3; ctx.globalAlpha = pulse; ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // 部门底色（根据演进百分比）
+            ctx.save();
+            ctx.beginPath(); ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = maturityColor; ctx.globalAlpha = 0.2; ctx.fill();
+            ctx.restore();
+
+            // 人形在上排（左侧）
+            drawDeptHumans(ctx, x - 15, y - size * 0.5, size * 0.5, humanCount, '#8b9cb3', 1);
+
+            // 机器人在下排（右侧）
+            drawDeptRobot(ctx, x + 15, y + size * 0.3, size * 0.6, maturityColor, Date.now());
+
+            // 绘制光点围绕机器人（右下侧）- 人类转化的技能
+            for (let i = 0; i < dotCount; i++) {
+                const angle = (i / Math.max(1, dotCount)) * Math.PI * 1.5 - Math.PI * 0.25;
+                const dotX = x + 15 + Math.cos(angle) * size * 0.7;
+                const dotY = y + size * 0.3 + Math.sin(angle) * size * 0.5;
+                ctx.save();
+                ctx.shadowColor = maturityColor;
+                ctx.shadowBlur = 10;
+                ctx.font = '12px Arial';
+                ctx.fillText('⚡', dotX - 5, dotY + 4);
+                ctx.restore();
+            }
+
+            // 部门图标
+            drawDeptIcon(ctx, x, y - size * 1.1, dept.id);
+
+            // 演进进度条（部门上方）- 只在演进状态时显示
+            if (dept.inEvolution) {
+                const barWidth = 50;
+                const barHeight = 6;
+                const barX = x - barWidth / 2;
+                const barY = y - size - 35;
+                // 背景
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                // 进度
+                ctx.fillStyle = '#00d4ff';
+                ctx.fillRect(barX, barY, barWidth * (dept.evolutionProgress / 100), barHeight);
+                // 标签
+                ctx.fillStyle = '#00d4ff'; ctx.font = '8px Microsoft YaHei'; ctx.textAlign = 'center';
+                ctx.fillText('演进中', x, barY - 3);
+            }
+
+            // 审查进度条（部门上方）- 只在审查状态时显示
+            if (dept.underReview) {
+                const barWidth = 50;
+                const barHeight = 6;
+                const barX = x - barWidth / 2;
+                const barY = y - size - 35;
+                // 背景
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                // 进度
+                ctx.fillStyle = '#9b59b6';
+                ctx.fillRect(barX, barY, barWidth * (dept.reviewProgress / 100), barHeight);
+                // 标签
+                ctx.fillStyle = '#9b59b6'; ctx.font = '8px Microsoft YaHei'; ctx.textAlign = 'center';
+                ctx.fillText('审查中', x, barY - 3);
+            }
+
+            // 部门名称
+            ctx.fillStyle = '#e0e6ed'; ctx.font = '10px Microsoft YaHei'; ctx.textAlign = 'center';
+            ctx.fillText(dept.name, x, y + size + 12);
+            ctx.fillStyle = maturityColor; ctx.font = '9px Microsoft YaHei';
+            ctx.fillText(`AI ${aiRate}%`, x, y + size + 22);
+        });
+    }
+
+    // ============ REPORT GENERATOR ============
+    const REPORT_TEMPLATES = {
+        generateReport(data) {
+            const painPointLabels = { production: '生产效率低/交期不准', quality: '产品质检问题', equipment: '设备突发故障', inventory: '原材料/库存混乱', decision: '报表/决策缺数据' };
+            const budgetLabels = { low: '低（<5万）', medium: '中（5-30万）', high: '高（>30万）' };
+            const timelineLabels = { fast: '1个月内', medium: '3-6个月', long: '半年以上' };
+            const productLabels = { injection: '注塑模具', stamping: '冲压模具', diecasting: '压铸模具', other: '其他' };
+            const painPoints = data.painPoints || [];
+            return `
+<h1>${data.factoryName || 'XX模具工厂'} AI 降本增效方案</h1>
+<p style="text-align:center;color:#8b9cb3;margin-bottom:2rem;">适用对象：${data.factoryName || 'XX模具工厂'} | ${new Date().toLocaleDateString('zh-CN')}</p>
+
+<h2>一、工厂概况与痛点分析</h2>
+<table>
+<tr><th style="width:25%">指标</th><th>数值</th></tr>
+<tr><td>员工人数</td><td>${data.employeeCount || '-'} 人</td></tr>
+<tr><td>厂房面积</td><td>${data.factoryArea || '-'} ㎡</td></tr>
+<tr><td>年产值</td><td>${data.annualOutput || '-'} 万元</td></tr>
+<tr><td>净利润率</td><td>${data.profitRate || '-'}%</td></tr>
+<tr><td>主要产品</td><td>${(data.products || []).map(p => productLabels[p]).join('、') || '-'}</td></tr>
+<tr><td>预算范围</td><td>${budgetLabels[data.budget] || '-'}</td></tr>
+<tr><td>期望周期</td><td>${timelineLabels[data.timeline] || '-'}</td></tr>
+</table>
+
+<h3>核心痛点</h3>
+<table>
+<tr><th>痛点</th><th>影响分析</th><th>优先级</th></tr>
+${painPoints.includes('production') ? '<tr><td>生产效率低/交期不准</td><td>订单准时率低，客户满意度下降，罚款风险</td><td>★★★★★</td></tr>' : ''}
+${painPoints.includes('quality') ? '<tr><td>产品质检问题</td><td>不良品率高，返工成本高，漏检风险</td><td>★★★★★</td></tr>' : ''}
+${painPoints.includes('equipment') ? '<tr><td>设备突发故障</td><td>非计划停机多，生产中断，维修成本高</td><td>★★★★☆</td></tr>' : ''}
+${painPoints.includes('inventory') ? '<tr><td>原材料/库存混乱</td><td>库存积压资金，紧急采购多，成本高</td><td>★★★☆☆</td></tr>' : ''}
+${painPoints.includes('decision') ? '<tr><td>报表/决策缺数据</td><td>决策凭经验，数据分散，反应慢</td><td>★★★☆☆</td></tr>' : ''}
+</table>
+
+<h2>二、技术架构设计</h2>
+<h3>2.1 三层架构</h3>
+<pre style="background:#1a2235;padding:1rem;border-radius:8px;overflow-x:auto">
+┌─────────────────────────────────────────────────────────┐
+│                    应用层（用户交互）                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │  Web管理后台  │  │ 微信小程序   │  │  大屏展示    │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+├─────────────────────────────────────────────────────────┤
+│                    AI服务层                             │
+│  大模型服务（DeepSeek/通义千问）+ 行业知识库 RAG         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │ 视觉AI   │ │ 预测模型  │ │ 排产算法 │ │ 知识问答  │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+├─────────────────────────────────────────────────────────┤
+│                    数据层                                │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │ MES系统  │ │ ERP系统  │ │ 传感器   │ │ 人工报表  │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+└─────────────────────────────────────────────────────────┘</pre>
+
+<h3>2.2 技术选型</h3>
+<table>
+<tr><th>层级</th><th>技术选型</th><th>说明</th></tr>
+<tr><td>前端</td><td>React/Vue + Ant Design</td><td>企业级UI组件库</td></tr>
+<tr><td>后端</td><td>Python FastAPI</td><td>支持AI集成</td></tr>
+<tr><td>数据库</td><td>PostgreSQL + Redis</td><td>结构化数据+缓存</td></tr>
+<tr><td>AI模型</td><td>DeepSeek API</td><td>国产大模型，按Token计费</td></tr>
+<tr><td>视觉AI</td><td>工业相机+TensorRT</td><td>边缘计算，低延迟</td></tr>
+<tr><td>部署</td><td>阿里云/腾讯云</td><td>国内低延迟，合规</td></tr>
+</table>
+
+<h2>三、分阶段实施路线</h2>
+
+<h3>P0 阶段：快速见效（1-2个月）</h3>
+<p><strong>目标：</strong>用最小成本，在最痛点上快速验证AI价值</p>
+<table>
+<tr><th>措施</th><th>说明</th><th>周期</th><th>预算</th><th>预期效果</th></tr>
+<tr>
+<td>AI视觉质检SaaS</td>
+<td>部署视觉检测，替代人工目检</td>
+<td>1-2月</td>
+<td>3-5万</td>
+<td>漏检率 3%→1.5%，节省63万/年</td>
+</tr>
+<tr>
+<td>智能报表平台</td>
+<td>打通Excel数据，自动生成经营报表</td>
+<td>1-2月</td>
+<td>含于SaaS</td>
+<td>报表生成时间 3天→实时</td>
+</tr>
+<tr>
+<td>实时经营大屏</td>
+<td>核心指标实时展示</td>
+<td>1-2月</td>
+<td>2-3万</td>
+<td>决策效率提升50%</td>
+</tr>
+</table>
+
+<h3>P1 阶段：系统化改造（3-6个月）</h3>
+<p><strong>目标：</strong>在P0验证成功基础上，扩大AI应用，打通数据孤岛</p>
+<table>
+<tr><th>措施</th><th>说明</th><th>周期</th><th>预算</th><th>预期效果</th></tr>
+<tr>
+<td>预测性维护系统</td>
+<td>传感器+故障预测模型</td>
+<td>3-4月</td>
+<td>5-8万</td>
+<td>突发停机减少80%，节省96万/年</td>
+</tr>
+<tr>
+<td>智能排产系统</td>
+<td>APS自动排产，多约束优化</td>
+<td>3-4月</td>
+<td>8-12万</td>
+<td>准时率 80%→95%+</td>
+</tr>
+<tr>
+<td>库存预测优化</td>
+<td>AI需求预测+安全库存预警</td>
+<td>2-3月</td>
+<td>3-5万</td>
+<td>紧急采购降低67%</td>
+</tr>
+<tr>
+<td>数据中台建设</td>
+<td>统一数据口径，建设数据仓库</td>
+<td>全程</td>
+<td>含于系统</td>
+<td>数据驱动决策</td>
+</tr>
+</table>
+
+<h3>P2 阶段：全面AI转型（7-12个月）</h3>
+<p><strong>目标：</strong>实现工厂级全面AI化，构建行业领先的智能制造能力</p>
+<table>
+<tr><th>措施</th><th>说明</th><th>周期</th><th>预算</th><th>预期效果</th></tr>
+<tr>
+<td>数字孪生工厂</td>
+<td>虚拟工厂模型，虚实映射</td>
+<td>6-12月</td>
+<td>15-20万</td>
+<td>行业领先竞争力</td>
+</tr>
+<tr>
+<td>行业知识库构建</td>
+<td>模具行业经验知识，训练专属AI助手</td>
+<td>6-12月</td>
+<td>含于系统</td>
+<td>AI决策支持能力</td>
+</tr>
+<tr>
+<td>全模块AI化</td>
+<td>能源/质量/工艺全面AI化</td>
+<td>6-12月</td>
+<td>5-10万</td>
+<td>设备OEE 65%→82%+</td>
+</tr>
+</table>
+
+<h2>四、预算汇总</h2>
+<table>
+<tr><th>阶段</th><th>周期</th><th>主要投入</th><th>预算范围</th></tr>
+<tr><td>P0 快速见效</td><td>1-2个月</td><td>AI质检SaaS + 智能报表 + Dashboard</td><td>5-8万</td></tr>
+<tr><td>P1 系统化改造</td><td>3-6个月</td><td>传感器 + 预测系统 + 排产 + 库存</td><td>16-25万</td></tr>
+<tr><td>P2 全面转型</td><td>7-12个月</td><td>数字孪生 + 全模块AI化 + 知识库</td><td>20-30万</td></tr>
+<tr><td><strong>合计</strong></td><td><strong>12个月</strong></td><td>—</td><td><strong>41-63万</strong></td></tr>
+</table>
+
+<h2>五、预期效果</h2>
+<table>
+<tr><th>指标</th><th>当前</th><th>目标</th><th>提升</th></tr>
+<tr><td>订单准时率</td><td>80%</td><td>95%+</td><td>+15%</td></tr>
+<tr><td>质检漏检率</td><td>3%</td><td>1.5%</td><td>-50%</td></tr>
+<tr><td>设备突发停机</td><td>4-5次/月</td><td><1次/月</td><td>-80%</td></tr>
+<tr><td>设备OEE</td><td>65%</td><td>82%+</td><td>+17%</td></tr>
+<tr><td>库存周转天数</td><td>45天</td><td>28天</td><td>-38%</td></tr>
+<tr><td>净利润率</td><td>${data.profitRate || '7.5'}%</td><td>12%+</td><td>+${(12 - (data.profitRate || 7.5)).toFixed(1)}%</td></tr>
+</table>
+
+<h3>ROI 测算</h3>
+<p>按年产值 ${data.annualOutput || '5000'} 万元测算：</p>
+<table>
+<tr><th>项目</th><th>金额</th></tr>
+<tr><td>预计年度节约成本</td><td>300-500 万元</td></tr>
+<tr><td>项目总投入</td><td>41-63 万元</td></tr>
+<tr><td>投资回收期</td><td>2-4 个月</td></tr>
+</table>
+
+<h2>六、立即行动清单</h2>
+<table>
+<tr><th>序号</th><th>行动项</th><th>负责部门</th><th>说明</th></tr>
+<tr><td>1</td><td>联系2-3家AI视觉检测供应商</td><td>质量部+IT</td><td>索取演示和报价</td></tr>
+<tr><td>2</td><td>采集缺陷样本图片</td><td>质量部</td><td>各50张+</td></tr>
+<tr><td>3</td><td>识别10台核心设备</td><td>设备部</td><td>评估传感器安装</td></tr>
+<tr><td>4</td><td>整理近3个月订单数据</td><td>生产部</td><td>订单量/交期/优先级</td></tr>
+<tr><td>5</td><td>评估现有MES/ERP系统</td><td>IT部</td><td>确定数据对接方案</td></tr>
+<tr><td>6</td><td>选定试点工序</td><td>管理层</td><td>建议从质检切入</td></tr>
+</table>
+
+<h2>七、风险与应对</h2>
+<table>
+<tr><th>风险</th><th>级别</th><th>应对策略</th></tr>
+<tr><td>AI效果不达预期</td><td>中</td><td>P0阶段小范围试点，验证后再扩</td></tr>
+<tr><td>与现有系统对接困难</td><td>中</td><td>优先选SaaS产品，避免深度定制</td></tr>
+<tr><td>员工抵触新系统</td><td>中</td><td>从"辅助工具"定位，强调不减员</td></tr>
+<tr><td>数据质量差影响模型</td><td>高</td><td>P0阶段先做数据治理，不可跳过</td></tr>
+</table>
+
+<p style="text-align:center; margin-top: 3rem; color: #8b9cb3; border-top:1px solid #2d3a4f;padding-top:1rem;">本方案为路线图性质，具体实施时请根据实际情况调整。如需详细技术方案，可进一步输出专项文档。</p>`;
+        }
+    };
+
+    // ============ TEMPLATE DATA ============
+    function importTemplateData() {
+        const templateData = {
+            factoryName: '深圳精密模具工厂',
+            employeeCount: 180,
+            factoryArea: 8500,
+            annualOutput: 6000,
+            profitRate: 12,
+            products: ['injection', 'diecasting'],
+            painPoints: ['production', 'quality'],
+            budget: 'medium',
+            timeline: 'medium'
+        };
+
+        const form = document.getElementById('factory-form');
+        // 设置文本和数字字段
+        form.factoryName.value = templateData.factoryName;
+        form.employeeCount.value = templateData.employeeCount;
+        form.factoryArea.value = templateData.factoryArea;
+        form.annualOutput.value = templateData.annualOutput;
+        form.profitRate.value = templateData.profitRate;
+
+        // 设置复选框
+        templateData.products.forEach(p => {
+            const cb = form.querySelector(`input[name="products"][value="${p}"]`);
+            if (cb) cb.checked = true;
+        });
+        templateData.painPoints.forEach(p => {
+            const cb = form.querySelector(`input[name="painPoints"][value="${p}"]`);
+            if (cb) cb.checked = true;
+        });
+
+        // 设置单选按钮
+        const budgetRadio = form.querySelector(`input[name="budget"][value="${templateData.budget}"]`);
+        if (budgetRadio) budgetRadio.checked = true;
+        const timelineRadio = form.querySelector(`input[name="timeline"][value="${templateData.timeline}"]`);
+        if (timelineRadio) timelineRadio.checked = true;
+
+        alert('模板数据已导入，请点击"生成 AI 方案"查看');
+    }
+
+    // ============ PDF EXPORT ============
+    async function exportToPDF(element) {
+        if (typeof jspdf === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => script.onload = resolve);
+        }
+        if (typeof html2canvas === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => script.onload = resolve);
+        }
+        const { jsPDF } = window.jspdf;
+        const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#0a0e17' });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgWidth = 210, pageHeight = 297, imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight, position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft >= 0) { position = heightLeft - imgHeight; pdf.addPage(); pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight); heightLeft -= pageHeight; }
+        pdf.save('模具工厂AI降本增效方案.pdf');
+    }
+
+    // ============ APP ============
+    class App {
+        constructor() { this.currentTab = 'dashboard'; this.renderer = null; this.eventBus = null; this.agentSystem = null; this.businessFlow = null; this.reportGenerator = null; this.isRunning = false; this.evolutionEngine = null; this.evolutionCtx = null; this.lastEvolutionTime = 0; }
+        init() { this.bindEvents(); this.initDashboard(); this.initReport(); this.initEvolution(); this.startClock(); this.loadSavedData(); }
+        bindEvents() {
+            document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', e => this.switchTab(e.target.dataset.tab)); });
+            document.getElementById('factory-form').addEventListener('submit', e => { e.preventDefault(); this.generateReport(); });
+            document.getElementById('btn-export-pdf').addEventListener('click', () => this.exportPDF());
+            document.getElementById('btn-save').addEventListener('click', () => this.saveReport());
+        }
+        switchTab(tab) {
+            this.currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.tab === tab); });
+            document.querySelectorAll('.view').forEach(view => { view.classList.toggle('active', view.id === `${tab}-view`); });
+            if (tab === 'dashboard' && !this.isRunning) this.startSimulation();
+            if (tab === 'evolution') this.lastEvolutionTime = performance.now();
+        }
+        initDashboard() {
+            const canvas = document.getElementById('mainCanvas');
+            this.renderer = new Renderer(canvas);
+            this.eventBus = new EventBus();
+            this.agentSystem = new AgentSystem(this.eventBus);
+            this.businessFlow = new BusinessFlow(this.agentSystem, this.eventBus);
+            this.eventBus.on('statsUpdate', stats => this.updateStats(stats));
+            this.eventBus.on('event', event => this.addEventItem(event));
+        }
+        initReport() { this.reportGenerator = REPORT_TEMPLATES; }
+        initEvolution() {
+            const canvas = document.getElementById('mainCanvas2');
+            if (canvas) {
+                this.evolutionCtx = canvas.getContext('2d');
+                this.evolutionEngine = new EvolutionEngine();
+                document.getElementById('speedSlider')?.addEventListener('input', (e) => {
+                    const speeds = { 1: '慢速', 2: '中速', 3: '快速' };
+                    document.getElementById('speedLabel').textContent = speeds[e.target.value];
+                    this.evolutionEngine.evolutionSpeed = parseInt(e.target.value);
+                });
+                document.getElementById('btn-pause')?.addEventListener('click', () => {
+                    this.evolutionEngine.paused = !this.evolutionEngine.paused;
+                    document.getElementById('btn-pause').textContent = this.evolutionEngine.paused ? '继续' : '暂停';
+                });
+                document.getElementById('btn-reset')?.addEventListener('click', () => {
+                    this.evolutionEngine = new EvolutionEngine();
+                });
+                this.lastEvolutionTime = performance.now();
+                this.evolutionLoop();
+            }
+        }
+        evolutionLoop() {
+            if (this.currentTab !== 'evolution') { requestAnimationFrame(() => this.evolutionLoop()); return; }
+            const now = performance.now();
+            const dt = (now - this.lastEvolutionTime) / 1000;
+            this.lastEvolutionTime = now;
+            this.evolutionEngine.update(dt);
+            if (this.evolutionCtx && document.getElementById('mainCanvas2')) {
+                const canvas = document.getElementById('mainCanvas2');
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                renderEvolution(this.evolutionCtx, canvas, this.evolutionEngine);
+            }
+            this.updateEvolutionLog();
+            requestAnimationFrame(() => this.evolutionLoop());
+        }
+        updateEvolutionLog() {
+            const logEl = document.getElementById('evolution-log');
+            if (logEl && this.evolutionEngine) {
+                logEl.innerHTML = this.evolutionEngine.logs.slice(0, 20).map(log =>
+                    `<div class="log-item ${log.type}">${log.time} ${log.message}</div>`
+                ).join('');
+            }
+        }
+        startSimulation() {
+            if (this.isRunning) return;
+            this.isRunning = true;
+            this.agentSystem.init();
+            this.businessFlow.setRenderer(this.renderer);
+            this.businessFlow.start();
+            this.renderer.start();
+        }
+        startClock() {
+            const updateClock = () => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false }); };
+            updateClock(); setInterval(updateClock, 1000);
+        }
+        updateStats(stats) {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = stats.map(s => `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div><div class="stat-trend ${s.trend > 0 ? 'up' : 'down'}">${s.trend > 0 ? '↑' : '↓'} ${Math.abs(s.trend).toFixed(1)}%</div></div>`).join('');
+        }
+        addEventItem(event) {
+            const feed = document.getElementById('event-feed');
+            const item = document.createElement('div');
+            item.className = 'event-item';
+            const iconClass = event.type === 'alert' ? 'alert' : event.type === 'success' ? 'success' : 'info';
+            const icons = { alert: '⚠', success: '✓', info: 'ℹ' };
+            item.innerHTML = `<span class="event-time">${event.time}</span><span class="event-icon ${iconClass}">${icons[event.type]}</span><span>${event.message}</span>`;
+            feed.insertBefore(item, feed.firstChild);
+            while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+        }
+        generateReport() {
+            const form = document.getElementById('factory-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            data.products = [...form.querySelectorAll('input[name="products"]:checked')].map(i => i.value);
+            data.painPoints = [...form.querySelectorAll('input[name="painPoints"]:checked')].map(i => i.value);
+            const content = this.reportGenerator.generateReport(data);
+            document.getElementById('report-content').innerHTML = content;
+            localStorage.setItem('factoryData', JSON.stringify(data));
+            localStorage.setItem('lastReport', content);
+        }
+        async exportPDF() { await exportToPDF(document.getElementById('report-content')); }
+        saveReport() { localStorage.setItem('lastReport', document.getElementById('report-content').innerHTML); alert('报告已保存'); }
+        loadSavedData() { const saved = localStorage.getItem('lastReport'); if (saved) document.getElementById('report-content').innerHTML = saved; }
+    }
+
+    // ============ START ============
+    window.addEventListener('DOMContentLoaded', () => {
+        const app = new App();
+        app.init();
+        app.startSimulation();
+    });
+    </script>
+</body>
+</html>
