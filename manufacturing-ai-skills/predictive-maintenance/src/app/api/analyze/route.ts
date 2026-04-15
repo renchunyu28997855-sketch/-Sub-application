@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeMaintenance, mockAnalyze } from '@/lib/llm';
+
+async function getLlmModule() {
+  const module = await import('@/lib/llm');
+  return module;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,11 +13,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '设备ID不能为空' }, { status: 400 });
     }
 
+    const llm = await getLlmModule();
     let result;
     if (!process.env.MINIMAX_API_KEY) {
-      result = mockAnalyze(body);
+      result = llm.mockAnalyze(body);
     } else {
-      result = await analyzeMaintenance(body);
+      result = await llm.analyzeMaintenance(body);
     }
     return NextResponse.json(result);
   } catch (error) {

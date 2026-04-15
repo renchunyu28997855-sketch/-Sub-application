@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeMaterial, mockAnalyze } from '@/lib/llm';
+
+async function getLlmModule() {
+  const module = await import('@/lib/llm');
+  return module;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,11 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '输入数据不能为空' }, { status: 400 });
     }
 
+    const llm = await getLlmModule();
     let result;
     if (mock || !process.env.MINIMAX_API_KEY) {
-      result = mockAnalyze({ templateId, inputData, context, mode });
+      result = llm.mockAnalyze({ templateId, inputData, context, mode });
     } else {
-      result = await analyzeMaterial({ templateId, inputData, context, mode });
+      result = await llm.analyzeMaterial({ templateId, inputData, context, mode });
     }
     return NextResponse.json(result);
   } catch (error) {
