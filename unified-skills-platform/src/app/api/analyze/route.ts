@@ -1,17 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeSkill } from '@/lib/llm';
 import { getSkillById } from '@/lib/skills';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
 
 interface AnalyzeRequest {
   skillId: string;
   input: string;
   token?: string;
+  messages?: Message[];
+}
+
+// 通过主站代理调用LLM
+async function callLLMViaProxy(token: string, appId: string, messages: Array<{ role: string; content: string }>) {
+  const response = await fetch('http://47.112.29.121/api/llm/proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      appId,
+      messages,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`LLM proxy failed: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: AnalyzeRequest = await req.json();
-    const { skillId, input, token } = body;
+    const { skillId, input, token, messages } = body;
 
     if (!skillId) {
       return NextResponse.json({ error: '技能ID不能为空' }, { status: 400 });
@@ -21,10 +51,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '请输入内容' }, { status: 400 });
     }
 
+    // 获取技能配置
+    const skill = getSkillById(skillId);
+    if (!skill) {
+      return NextResponse.json({ error: '技能不存在' }, { status: 404 });
+    }
+
+    // appId 格式: {categoryKey}-{skillId}
+    const appId = `${skill.categoryKey}-${skill.id}`;
+
     // Check credits if token is provided
     if (token) {
       try {
-        const appId = `skill-${skillId}`;
         const creditResponse = await fetch('http://47.112.29.121/api/credit/check', {
           method: 'POST',
           headers: {
@@ -51,29 +89,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get skill config
-    const skill = getSkillById(skillId);
-    if (!skill) {
-      return NextResponse.json({ error: '技能不存在' }, { status: 404 });
+    // 构建发送给LLM的消息
+    const llmMessages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: `${skill.systemPrompt}\n\n请以专业、友好的方式回复。如果需要更多信息，请明确询问。` }
+    ];
+
+    // 添加历史消息
+    if (messages && messages.length > 0) {
+      for (const msg of messages) {
+        llmMessages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+      }
     }
 
-    // Use mock if no API key
-    if (!process.env.MINIMAX_API_KEY || process.env.MINIMAX_API_KEY === 'your_api_key_here') {
-      return NextResponse.json({
-        skillId,
-        skillName: skill.name,
-        mock: true,
-        input,
-        result: `这是 ${skill.name} 的模拟分析结果`
-      });
-    }
+    // 添加当前输入
+    llmMessages.push({ role: 'user', content: input });
 
-    // Call LLM
-    let result: Record<string, unknown>;
+    // 调用LLM（通过主站代理）
+    let result: string;
     try {
-      result = await analyzeSkill(skillId, skill.systemPrompt, input);
-      result.skillId = skillId;
-      result.skillName = skill.name;
+      if (token) {
+        const llmResponse = await callLLMViaProxy(token, appId, llmMessages);
+        // 解析代理返回的结果
+        result = llmResponse.choices?.[0]?.message?.content || JSON.stringify(llmResponse);
+      } else {
+        // 没有token，返回mock
+        return NextResponse.json({
+          skillId,
+          skillName: skill.name,
+          mock: true,
+          input,
+          messages,
+          result: `这是 ${skill.name} 的模拟分析结果（多轮对话模式）`
+        });
+      }
     } catch (llmError) {
       console.error('LLM API error:', llmError);
       return NextResponse.json(
@@ -82,10 +130,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Deduct credit after successful analysis
+    // 扣除积分
     if (token) {
       try {
-        const appId = `skill-${skillId}`;
         await fetch('http://47.112.29.121/api/credit/consume', {
           method: 'POST',
           headers: {
@@ -99,7 +146,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      skillId,
+      skillName: skill.name,
+      analysis: result,
+    });
+
   } catch (error) {
     console.error('Analyze error:', error);
     const message = error instanceof Error ? error.message : String(error);
