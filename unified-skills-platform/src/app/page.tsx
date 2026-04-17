@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getSkillById } from '@/lib/skills';
 import { Skill } from '@/lib/types';
+import { getSkillGuideResolved, buildInputFromGuide, SkillGuide, InputField, SelectOption } from '@/lib/skill-guides';
 
 interface Message {
   id: string;
@@ -20,15 +21,33 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [skillGuide, setSkillGuide] = useState<SkillGuide | null>(null);
+  const [guideValues, setGuideValues] = useState<Record<string, string>>({});
+  const [currentStep, setCurrentStep] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const STORAGE_KEY = 'unified-skills-conversations';
+
+  // 检测 localStorage 是否可用（无痕模式下可能不可用）
+  const isStorageAvailable = (): boolean => {
+    try {
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const storageAvailable = typeof window !== 'undefined' ? isStorageAvailable() : false;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const saveConversation = (skillId: string, msgs: Message[]) => {
+    if (!storageAvailable) return;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const conversations: Record<string, Message[]> = stored ? JSON.parse(stored) : {};
@@ -40,6 +59,7 @@ export default function Home() {
   };
 
   const loadConversation = (skillId: string): Message[] => {
+    if (!storageAvailable) return [];
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -53,6 +73,7 @@ export default function Home() {
   };
 
   const clearConversation = (skillId: string) => {
+    if (!storageAvailable) return;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -82,6 +103,9 @@ export default function Home() {
       setSelectedSkill(skill);
       setMessages(loadConversation(skill.id));
       setConversationId(skill.id);
+      // 加载技能引导配置（优先专用配置，兜底通用生成）
+      const guide = getSkillGuideResolved(skill.id, skill.name, skill.description, skill.inputFormat);
+      setSkillGuide(guide);
       setIsReady(true);
     } else {
       setError('技能不存在');
@@ -89,10 +113,61 @@ export default function Home() {
     }
   }, []);
 
+  // 处理选项选择（单选）
+  const handleSelectOption = (fieldId: string, value: string) => {
+    const newValues = { ...guideValues, [fieldId]: value };
+    setGuideValues(newValues);
+
+    // 如果有技能引导，尝试构建输入
+    if (skillGuide) {
+      const input = buildInputFromGuide(skillGuide, newValues);
+      setUserInput(input);
+    }
+  };
+
+  // 处理多选切换
+  const handleMultiSelectToggle = (fieldId: string, value: string) => {
+    const currentValues = guideValues[fieldId]?.split(',').filter(Boolean) || [];
+    const newValues = { ...guideValues };
+
+    if (currentValues.includes(value)) {
+      // 取消选择
+      newValues[fieldId] = currentValues.filter(v => v !== value).join(',');
+    } else {
+      // 添加选择
+      newValues[fieldId] = [...currentValues, value].join(',');
+    }
+
+    setGuideValues(newValues);
+
+    if (skillGuide) {
+      const input = buildInputFromGuide(skillGuide, newValues);
+      setUserInput(input);
+    }
+  };
+
+  // 快速模板选择
+  const handleQuickTemplate = (template: { name: string; description: string; values: Record<string, string> }) => {
+    if (template) {
+      setGuideValues(template.values);
+      if (skillGuide) {
+        const input = buildInputFromGuide(skillGuide, template.values);
+        setUserInput(input);
+      }
+    }
+  };
+
+  // 清空选择
+  const handleClearGuide = () => {
+    setGuideValues({});
+    setCurrentStep(0);
+  };
+
   const handleNewChat = () => {
     if (conversationId) {
       clearConversation(conversationId);
       setMessages([]);
+      handleClearGuide();
     }
   };
 
@@ -186,6 +261,9 @@ export default function Home() {
 
   const chineseName = selectedSkill.description?.split('。')[0] || selectedSkill.name;
 
+  // 当前引导字段
+  const currentField = skillGuide?.fields[currentStep];
+
   return (
     <div className="chat-container">
       {/* 顶部导航 */}
@@ -207,7 +285,120 @@ export default function Home() {
       {/* 聊天区域 */}
       <main className="chat-main">
         <div className="messages-wrapper">
-          {messages.length === 0 && (
+          {messages.length === 0 && skillGuide && (
+            <div className="guide-panel">
+              <div className="guide-header">
+                <h2>{skillGuide.title}</h2>
+                <p>{skillGuide.description}</p>
+              </div>
+
+              {/* 快速模板 */}
+              {skillGuide.quickTemplates && skillGuide.quickTemplates.length > 0 && (
+                <div className="guide-section">
+                  <h3>快速开始</h3>
+                  <div className="quick-templates">
+                    {skillGuide.quickTemplates.map((template, idx) => (
+                      <button
+                        key={idx}
+                        className="quick-template-btn"
+                        onClick={() => handleQuickTemplate(template)}
+                      >
+                        <span className="template-name">{template.name}</span>
+                        <span className="template-desc">{template.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 引导选项 */}
+              <div className="guide-section">
+                <h3>或者自定义</h3>
+                {skillGuide.fields.map((field, idx) => (
+                  <div key={field.id} className="guide-field">
+                    <label className="field-label">
+                      {field.label}
+                      {field.required && <span className="required">*</span>}
+                    </label>
+
+                    {field.type === 'select' && field.options && (
+                      <div className="option-cards">
+                        {field.options.map((option) => (
+                          <button
+                            key={option.value}
+                            className={`option-card ${guideValues[field.id] === option.value ? 'selected' : ''}`}
+                            onClick={() => handleSelectOption(field.id, option.value)}
+                          >
+                            <span className="option-label">{option.label}</span>
+                            {option.description && (
+                              <span className="option-desc">{option.description}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {field.type === 'select-multiple' && field.options && (
+                      <>
+                        <div className="option-cards">
+                          {field.options.map((option) => {
+                            const currentValues = guideValues[field.id]?.split(',').filter(Boolean) || [];
+                            const isSelected = currentValues.includes(option.value);
+                            return (
+                              <button
+                                key={option.value}
+                                className={`option-card ${isSelected ? 'selected' : ''}`}
+                                onClick={() => handleMultiSelectToggle(field.id, option.value)}
+                              >
+                                <span className="option-label">
+                                  {isSelected && '✓ '}{option.label}
+                                </span>
+                                {option.description && (
+                                  <span className="option-desc">{option.description}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {field.multiSelectHint && (
+                          <p className="multi-select-hint">{field.multiSelectHint}</p>
+                        )}
+                      </>
+                    )}
+
+                    {field.type === 'text' && (
+                      <input
+                        type="text"
+                        className="guide-input"
+                        placeholder={field.placeholder}
+                        value={guideValues[field.id] || ''}
+                        onChange={(e) => handleSelectOption(field.id, e.target.value)}
+                      />
+                    )}
+
+                    {field.type === 'textarea' && (
+                      <textarea
+                        className="guide-textarea"
+                        placeholder={field.placeholder}
+                        value={guideValues[field.id] || ''}
+                        onChange={(e) => handleSelectOption(field.id, e.target.value)}
+                        rows={3}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="guide-actions">
+                <button className="guide-clear-btn" onClick={handleClearGuide}>
+                  清空选择
+                </button>
+              </div>
+            </div>
+          )}
+
+          {messages.length === 0 && !skillGuide && (
             <div className="welcome-card">
               <div className="welcome-icon">{selectedSkill.icon}</div>
               <h2>{chineseName}</h2>
@@ -268,7 +459,7 @@ export default function Home() {
         <div className="input-wrapper">
           <textarea
             className="chat-input"
-            placeholder="输入消息..."
+            placeholder="输入消息，或点击上方选项自动填入..."
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={handleKeyDown}

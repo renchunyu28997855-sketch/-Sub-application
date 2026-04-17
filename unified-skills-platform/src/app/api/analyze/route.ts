@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSkillById } from '@/lib/skills';
+import { executeSkill, SkillType } from '@/lib/skills-workflow';
 
 interface Message {
   id: string;
@@ -89,67 +90,94 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 构建发送给LLM的消息
-    const llmMessages: Array<{ role: string; content: string }> = [
-      { role: 'system', content: `${skill.systemPrompt}\n\n请以专业、友好的方式回复。如果需要更多信息，请明确询问。` }
-    ];
+    // 使用高效工作流执行技能
+    const execResult = await executeSkill(skill, input, messages || []);
 
-    // 添加历史消息
-    if (messages && messages.length > 0) {
-      for (const msg of messages) {
-        llmMessages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
-      }
+    // 模板型：直接返回，不需要调用LLM
+    if (execResult.type === 'template') {
+      return NextResponse.json({
+        skillId,
+        skillName: skill.name,
+        type: 'template',
+        analysis: execResult.output,
+        steps: execResult.steps,
+      });
     }
 
-    // 添加当前输入
-    llmMessages.push({ role: 'user', content: input });
+    // 需要LLM：构建消息并调用
+    if (execResult.llmContext) {
+      const { systemPrompt, userInput } = execResult.llmContext;
 
-    // 调用LLM（通过主站代理）
-    let result: string;
-    try {
-      if (token) {
-        const llmResponse = await callLLMViaProxy(token, appId, llmMessages);
-        // 解析代理返回的结果
-        result = llmResponse.choices?.[0]?.message?.content || JSON.stringify(llmResponse);
-      } else {
-        // 没有token，返回mock
-        return NextResponse.json({
-          skillId,
-          skillName: skill.name,
-          mock: true,
-          input,
-          messages,
-          result: `这是 ${skill.name} 的模拟分析结果（多轮对话模式）`
-        });
+      // 构建发送给LLM的消息
+      const llmMessages: Array<{ role: string; content: string }> = [
+        { role: 'system', content: `${systemPrompt}\n\n请以专业、友好的方式回复。如果需要更多信息，请明确询问。` }
+      ];
+
+      // 添加历史消息
+      if (messages && messages.length > 0) {
+        for (const msg of messages) {
+          llmMessages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+        }
       }
-    } catch (llmError) {
-      console.error('LLM API error:', llmError);
-      return NextResponse.json(
-        { error: 'AI服务暂时繁忙，请稍后重试' },
-        { status: 503 }
-      );
-    }
 
-    // 扣除积分
-    if (token) {
+      // 添加当前输入
+      llmMessages.push({ role: 'user', content: userInput });
+
+      // 调用LLM（通过主站代理）
+      let result: string;
       try {
-        await fetch('http://47.112.29.121/api/credit/consume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ appId, description: `使用技能: ${skill.name}` }),
-        });
-      } catch (consumeErr) {
-        console.error('Credit consume error:', consumeErr);
+        if (token) {
+          const llmResponse = await callLLMViaProxy(token, appId, llmMessages);
+          result = llmResponse.choices?.[0]?.message?.content || JSON.stringify(llmResponse);
+        } else {
+          return NextResponse.json({
+            skillId,
+            skillName: skill.name,
+            type: execResult.type,
+            mock: true,
+            input: userInput,
+            analysis: `这是 ${skill.name} 的模拟分析结果（${execResult.type}模式）`,
+            steps: execResult.steps,
+          });
+        }
+      } catch (llmError) {
+        console.error('LLM API error:', llmError);
+        return NextResponse.json(
+          { error: 'AI服务暂时繁忙，请稍后重试' },
+          { status: 503 }
+        );
       }
+
+      // 扣除积分
+      if (token) {
+        try {
+          await fetch('http://47.112.29.121/api/credit/consume', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ appId, description: `使用技能: ${skill.name}` }),
+          });
+        } catch (consumeErr) {
+          console.error('Credit consume error:', consumeErr);
+        }
+      }
+
+      return NextResponse.json({
+        skillId,
+        skillName: skill.name,
+        type: execResult.type,
+        analysis: result,
+        steps: execResult.steps,
+      });
     }
 
+    // Fallback
     return NextResponse.json({
       skillId,
       skillName: skill.name,
-      analysis: result,
+      analysis: execResult.output,
     });
 
   } catch (error) {
