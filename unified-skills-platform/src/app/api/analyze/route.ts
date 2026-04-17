@@ -18,7 +18,7 @@ interface AnalyzeRequest {
 
 // 通过主站代理调用LLM
 async function callLLMViaProxy(token: string, appId: string, messages: Array<{ role: string; content: string }>) {
-  const response = await fetch('http://47.112.29.121/api/llm/proxy', {
+  const response = await fetch('http://127.0.0.1:3002/api/llm/proxy', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     // Check credits if token is provided
     if (token) {
       try {
-        const creditResponse = await fetch('http://47.112.29.121/api/credit/check', {
+        const creditResponse = await fetch('http://127.0.0.1:3002/api/credit/check', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       // 扣除积分
       if (token) {
         try {
-          await fetch('http://47.112.29.121/api/credit/consume', {
+          await fetch('http://127.0.0.1:3002/api/credit/consume', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
