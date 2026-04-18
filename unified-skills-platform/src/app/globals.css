@@ -316,7 +316,9 @@ body {
   font-family: inherit;
   resize: none;
   outline: none;
-  max-height: 120px;
+  max-height: 360px;
+  min-height: 72px;
+  line-height: 1.5;
 }
 
 .chat-input::placeholder {
@@ -542,7 +544,8 @@ body {
 
 .guide-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 240px;
+  line-height: 1.5;
 }
 
 .multi-select-hint {

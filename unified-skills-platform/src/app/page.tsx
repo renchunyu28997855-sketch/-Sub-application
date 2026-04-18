@@ -24,9 +24,19 @@ export default function Home() {
   const [skillGuide, setSkillGuide] = useState<SkillGuide | null>(null);
   const [guideValues, setGuideValues] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(0);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const STORAGE_KEY = 'unified-skills-conversations';
+  const THEME_KEY = 'unified-skills-theme';
+
+  // 初始化主题 - 跟随首页主题设置
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
+    const initialTheme = savedTheme || 'dark';
+    setTheme(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  }, []);
 
   // 检测 localStorage 是否可用（无痕模式下可能不可用）
   const isStorageAvailable = (): boolean => {
@@ -279,7 +289,7 @@ export default function Home() {
           <span className="skill-icon">{selectedSkill.icon}</span>
           <span className="skill-name">{chineseName}</span>
         </div>
-        <div style={{ width: '120px' }}></div>
+        <div style={{ width: '60px' }}></div>
       </header>
 
       {/* 聊天区域 */}
@@ -463,7 +473,7 @@ export default function Home() {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            rows={1}
+            rows={3}
             disabled={loading}
           />
           <button
